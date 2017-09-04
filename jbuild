@@ -1,4 +1,10 @@
 (jbuild_version 1)
 
 (executable
- ((name silly_f)))
+ ((name silly_f)
+  (libraries (core_kernel))
+  (preprocess (pps (ppx_jane)))))
+
+(ocamllex (lexer))
+(menhir
+ ((modules (parser))))
