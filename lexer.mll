@@ -22,6 +22,9 @@ let ws = [' ' '\t' '\n']+
 rule read = parse
   | "λ" { LAMBDA }
   | "." { DOT }
+  | "+" { PLUS }
+  | '(' { LPAR }
+  | ')' { RPAR }
   | ws { read lexbuf }
   | int { INT (int_of_string (L.lexeme lexbuf)) }
   | identifier { IDENTIFIER (L.lexeme lexbuf) }
