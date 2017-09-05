@@ -4,9 +4,13 @@ let () =
   Errors.run_with_pretty_errors (fun () ->
     let f s = s
       |> Parse_utils.parse
-      |> Parsed.sexp_of_program
+      |> Ulambda.reduce Ulambda.Ctx.empty
+      |> Ulambda.sexp_of_value
       |> Sexp.to_string_hum
       |> print_endline in
+    f "1";
+    f "(λx.x) 7";
     f "λy.((λx.x) 7)";
     f "λy.(λx.x+y) 7";
+    f "(λ_. 1) 2";
   )

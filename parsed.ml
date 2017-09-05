@@ -10,8 +10,5 @@ type term = [
 | `Int of int]
 [@@deriving sexp]
 
-type value = [`Lambda of pattern * term]
-[@@deriving sexp]
-
-type program = value
+type program = term
 [@@deriving sexp]

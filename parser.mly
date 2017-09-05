@@ -5,7 +5,6 @@
 %token RPAR
 %token <string> WILDCARD
 %token <string> IDENTIFIER
-%token <string> VARIANT
 %token <int> INT
 %token EOF
 
@@ -14,11 +13,7 @@
 %%
 
 program:
-  | v = value; EOF { v }
-  ;
-
-value:
-  | LAMBDA; p = pattern; DOT; t = term { `Lambda (p, t) }
+  | t = term; EOF { t }
   ;
 
 term:
