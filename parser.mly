@@ -22,14 +22,23 @@ value:
   ;
 
 term:
-  | LPAR; t = term; RPAR { t }
+  | LPAR; t = inner_term; RPAR; { t }
+  | t = inner_term;  { t }
+  ;
+
+inner_term:
   | LAMBDA; p = pattern; DOT; t = term { `Lambda (p, t) }
-  | LPAR; t1 = term; o = operator; t2 = term; RPAR { `App (`App (o, t1), t2) }
-  | LPAR; t1 = term; t2 = term; RPAR { `App (t1, t2) }
-  | t1 = term; o = operator; t2 = term { `App (`App (o, t1), t2) }
-  | t1 = term; t2 = term; { `App (t1, t2) }
+  | t1 = simple_term; o = operator; t2 = term { `App (`App (o, t1), t2) }
+  | t1 = simple_term; t2 = term { `App (t1, t2) }
+  | t1 = simple_term; o = operator; t2 = term { `App (`App (o, t1), t2) }
+  | t1 = simple_term; t2 = term; { `App (t1, t2) }
+  | t = simple_term; { t }
+  ;
+
+simple_term:
   | i = IDENTIFIER { `Ident i }
   | i = INT { `Int i }
+  | LPAR; t = inner_term; RPAR { t }
   ;
 
 operator:
