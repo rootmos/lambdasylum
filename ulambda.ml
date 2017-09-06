@@ -9,14 +9,32 @@ type pattern = [`Ident of string | `Wildcard]
 type term = [
   `App of term * term
 | `Lambda of pattern * term
-| `Ident of string
-| `Int of int]
+| `Ident of string]
 [@@deriving sexp]
 
 type value = [
   `Lambda of pattern * term
-| `Int of int]
+]
 [@@deriving sexp]
+
+let rec church t =
+  let rec go ?(acc=`Ident "x") = function
+    | 0 -> `Lambda (`Ident "f", `Lambda (`Ident "x", acc))
+    | i -> go ~acc:(`App (`Ident "f", acc)) (i-1) in
+  match t with
+  | `Int i -> go i
+  | `Ident n -> `Ident n
+  | `Lambda (p, t) -> `Lambda (p, church t)
+  | `App (t1, t2) -> `App (church t1, church t2)
+
+let plus =
+  `Lambda (`Ident "m",
+  `Lambda (`Ident "n",
+  `Lambda (`Ident "f",
+  `Lambda (`Ident "x",
+  `App (`App (`Ident "m", `Ident "f"),
+    `App ( `App (`Ident "n", `Ident "f"), `Ident "x")
+  )))))
 
 module Ctx = struct
   type t = {
@@ -24,6 +42,7 @@ module Ctx = struct
   } [@@deriving sexp]
 
   let empty = { bindings = [] }
+  let predef = { bindings = ["plus", plus] }
 
   let bind ctx n v = { bindings = (n, v) :: ctx.bindings }
 
@@ -37,7 +56,6 @@ module Ctx = struct
 end
 
 let rec reduce ctx = function
-  `Int i -> `Int i
 | `Lambda x -> `Lambda x
 | `Ident n -> Ctx.lookup ctx n
 | `App (f, a) ->
@@ -45,5 +63,4 @@ let rec reduce ctx = function
     begin match reduce ctx f with
     | `Lambda (`Wildcard, t) -> reduce ctx t
     | `Lambda (`Ident n, t) -> reduce (Ctx.bind ctx n a') t
-    | _ -> raise @@ Ulambda_exception ApplicationError
     end
