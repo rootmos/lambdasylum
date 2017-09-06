@@ -1,3 +1,4 @@
+open Printf
 open Core_kernel.Std
 
 type error = Binding of string | ApplicationError
@@ -64,3 +65,13 @@ let rec reduce ctx = function
     | `Lambda (`Wildcard, t) -> reduce ctx t
     | `Lambda (`Ident n, t) -> reduce (Ctx.bind ctx n a') t
     end
+
+let pretty v =
+  let rec go = function
+    | `Lambda (`Wildcard, t) -> sprintf "λ_.(%s)" (go t)
+    | `Lambda (`Ident n, t) -> sprintf "λ%s.(%s)" n (go t)
+    | `App (t1, t2) -> sprintf "(%s) (%s)" (go t1) (go t2)
+    | `Ident n -> n in
+  match v with
+  | `Lambda (`Wildcard, t) -> sprintf "λ_.(%s)" (go t)
+  | `Lambda (`Ident n, t) -> sprintf "λ%s.(%s)" n (go t)

@@ -6,8 +6,7 @@ let () =
       |> Parse_utils.parse
       |> Ulambda.church
       |> Ulambda.reduce Ulambda.Ctx.predef
-      |> Ulambda.sexp_of_value
-      |> Sexp.to_string_hum
+      |> Ulambda.pretty
       |> print_endline in
     f "1";
     f "1+2";
