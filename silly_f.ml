@@ -5,7 +5,7 @@ let () =
     let c s = s
       |> Parse_utils.parse
       |> Ulambda.church
-      |> Ulambda.reduce Ulambda.Ctx_term.empty in
+      |> Ulambda.reduce Ulambda.predef in
     let p ul = ul |> Ulambda.pretty |> print_endline in
     let i ul = ul
       |> Ulambda.unchurch_int
@@ -18,4 +18,6 @@ let () =
     c "λy.((λx.x) 7)" |> p;
     c "λy.(λx.x+y) 7" |> p;
     c "(λ_. 1) 2" |> i;
+    c "if true 1 2" |> i;
+    c "if false 1 2" |> i;
   )

@@ -39,8 +39,9 @@ module type Value = sig
 end
 
 module Ctx(V: Value) = struct
+  type bindings = (string * V.t) list
   type t = {
-    bindings: (string * V.t) list
+    bindings: bindings
   }
 
   let empty = { bindings = [] }
@@ -61,6 +62,14 @@ let rec substitute n (t: 'a) (t0: 'a): 'a = match t0 with
 | _ as t' -> t'
 
 module Ctx_term = Ctx(struct type t = value end)
+
+let predef: Ctx_term.t = {
+  bindings = [
+    "if", `Lambda (`Ident "x", `Ident "x");
+    "true", `Lambda (`Ident "x", `Lambda (`Ident "y", `Ident "x"));
+    "false", `Lambda (`Ident "x", `Lambda (`Ident "y", `Ident "y"));
+  ]
+  }
 
 let rec reduce ctx = function
 | `Lambda x -> `Lambda x

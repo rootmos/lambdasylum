@@ -1,3 +1,4 @@
+open Core_kernel.Std
 open Sexplib.Std
 
 type pattern = [`Ident of string | `Wildcard]
@@ -12,3 +13,5 @@ type term = [
 
 type program = term
 [@@deriving sexp]
+
+let pretty p = sexp_of_program p |> Sexp.to_string_hum |> print_endline
