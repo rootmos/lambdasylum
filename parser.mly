@@ -4,6 +4,7 @@
 %token STAR
 %token LPAR
 %token RPAR
+%token HYPH
 %token <string> WILDCARD
 %token <string> IDENTIFIER
 %token <int> INT
@@ -39,6 +40,7 @@ simple_term:
 operator:
   | PLUS { `Ident "+" }
   | STAR { `Ident "*" }
+  | HYPH { `Ident "-" }
   ;
 
 pattern:

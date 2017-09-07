@@ -17,29 +17,24 @@ type value = [
 
 module Vars = struct
   let f = `Ident "f"
-  let x = `Ident "x"
-  let y = `Ident "y"
-  let p = `Ident "p"
-  let q = `Ident "q"
+  let g = `Ident "g"
+  let h = `Ident "h"
   let m = `Ident "m"
   let n = `Ident "n"
+  let p = `Ident "p"
+  let q = `Ident "q"
+  let u = `Ident "u"
+  let x = `Ident "x"
+  let y = `Ident "y"
 end
 
 let rec church t =
   let open Vars in
-  let plus =
-    `Lambda (m, `Lambda (n, `Lambda (f, `Lambda (x,
-      `App (`App (m, f), `App (`App (n, f), x))))))
-  and mult =
-    `Lambda (m, `Lambda (n, `Lambda (f, `Lambda (x,
-      `App(`App (m, `App (n, f)), x))))) in
   let rec go ?(acc=x) = function
     | 0 -> `Lambda (f, `Lambda (x, acc))
     | i -> go ~acc:(`App (f, acc)) (i-1) in
   match t with
   | `Int i -> go i
-  | `Ident "+" -> plus
-  | `Ident "*" -> mult
   | `Ident n -> `Ident n
   | `Lambda (p, t) -> `Lambda (p, church t)
   | `App (t1, t2) -> `App (church t1, church t2)
@@ -81,8 +76,26 @@ let predef: Ctx_term.t = {
       "false", `Lambda (x, `Lambda (y, y));
       "and", `Lambda (p, `Lambda (q, `App (`App (p, q), p)));
       "or", `Lambda (p, `Lambda (q, `App (`App (p, p), q)));
+
+      "+", `Lambda (m, `Lambda (n, `Lambda (f, `Lambda (x,
+        `App (`App (m, f), `App (`App (n, f), x))))));
+      "*", `Lambda (m, `Lambda (n, `Lambda (f, `Lambda (x,
+        `App(`App (m, `App (n, f)), x)))));
+      "-", `Lambda (m, `Lambda (n,
+        (`App (`App (n, `Ident "pred"), m))));
       "zero?", `Lambda (n,
         `App (`App (n, (`Lambda (`Wildcard, `Ident "false"))), `Ident "true"));
+      "succ", `Lambda (n, `Lambda (f, `Lambda (x,
+        `App (f, `App (`App (n, f), x)))));
+      "pred", `Lambda (n, `Lambda (f, `Lambda (x,
+        `App (
+          `App (
+            `App (n, `Lambda (g, `Lambda (h, `App (h, `App (g, f))))),
+            `Lambda (`Wildcard, x)
+          ),
+          `Lambda (u, u)
+        )
+      )))
     ]
   }
 

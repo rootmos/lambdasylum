@@ -13,7 +13,7 @@ let wildcard_initial_char = '_'
 let wildcard_subsequent_char = ['a'-'z' 'A'-'Z' '0'-'9' '_']
 let wildcard = wildcard_initial_char wildcard_subsequent_char*
 
-let int = '-'? ['0'-'9']+
+let int = ['0'-'9']+
 let ws = [' ' '\t' '\n']+
 
 rule read = parse
@@ -21,6 +21,7 @@ rule read = parse
   | "." { DOT }
   | "+" { PLUS }
   | "*" { STAR }
+  | "-" { HYPH }
   | '(' { LPAR }
   | ')' { RPAR }
   | ws { read lexbuf }
