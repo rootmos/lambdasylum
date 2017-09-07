@@ -1,6 +1,7 @@
 %token LAMBDA
 %token DOT
 %token PLUS
+%token STAR
 %token LPAR
 %token RPAR
 %token <string> WILDCARD
@@ -37,6 +38,7 @@ simple_term:
 
 operator:
   | PLUS { `Ident "+" }
+  | STAR { `Ident "*" }
   ;
 
 pattern:

@@ -15,21 +15,31 @@ type value = [
   `Lambda of pattern * term
 ]
 
+module Vars = struct
+  let f = `Ident "f"
+  let x = `Ident "x"
+  let y = `Ident "y"
+  let p = `Ident "p"
+  let q = `Ident "q"
+  let m = `Ident "m"
+  let n = `Ident "n"
+end
+
 let rec church t =
+  let open Vars in
   let plus =
-    `Lambda (`Ident "m",
-  `Lambda (`Ident "n",
-  `Lambda (`Ident "f",
-  `Lambda (`Ident "x",
-  `App (`App (`Ident "m", `Ident "f"),
-    `App ( `App (`Ident "n", `Ident "f"), `Ident "x")
-    ))))) in
-  let rec go ?(acc=`Ident "x") = function
-    | 0 -> `Lambda (`Ident "f", `Lambda (`Ident "x", acc))
-    | i -> go ~acc:(`App (`Ident "f", acc)) (i-1) in
+    `Lambda (m, `Lambda (n, `Lambda (f, `Lambda (x,
+      `App (`App (m, f), `App (`App (n, f), x))))))
+  and mult =
+    `Lambda (m, `Lambda (n, `Lambda (f, `Lambda (x,
+      `App(`App (m, `App (n, f)), x))))) in
+  let rec go ?(acc=x) = function
+    | 0 -> `Lambda (f, `Lambda (x, acc))
+    | i -> go ~acc:(`App (f, acc)) (i-1) in
   match t with
   | `Int i -> go i
   | `Ident "+" -> plus
+  | `Ident "*" -> mult
   | `Ident n -> `Ident n
   | `Lambda (p, t) -> `Lambda (p, church t)
   | `App (t1, t2) -> `App (church t1, church t2)
@@ -65,12 +75,7 @@ module Ctx_term = Ctx(struct type t = value end)
 
 let predef: Ctx_term.t = {
   bindings =
-    let x = `Ident "x"
-    and y = `Ident "y"
-    and p = `Ident "p"
-    and q = `Ident "q"
-    and n = `Ident "n"
-    in [
+    let open Vars in [
       "if", `Lambda (x, x);
       "true", `Lambda (x, `Lambda (y, x));
       "false", `Lambda (x, `Lambda (y, y));

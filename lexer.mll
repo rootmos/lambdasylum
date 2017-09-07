@@ -20,6 +20,7 @@ rule read = parse
   | "λ" { LAMBDA }
   | "." { DOT }
   | "+" { PLUS }
+  | "*" { STAR }
   | '(' { LPAR }
   | ')' { RPAR }
   | ws { read lexbuf }
