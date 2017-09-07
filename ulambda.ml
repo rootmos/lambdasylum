@@ -93,9 +93,12 @@ let predef: Ctx_term.t = {
             `App (n, `Lambda (g, `Lambda (h, `App (h, `App (g, f))))),
             `Lambda (`Wildcard, x)
           ),
-          `Lambda (u, u)
-        )
-      )))
+          `Lambda (u, u)))));
+      "leq?", `Lambda (m, `Lambda (n, `App (`Ident "zero?",
+        `App (`App (`Ident "-", m), n))));
+      "eq?", `Lambda (m, `Lambda (n,
+        `App (`App (`Ident "and", `App (`App (`Ident "leq?", m), n)),
+          `App (`App (`Ident "leq?", n), m))));
     ]
   }
 

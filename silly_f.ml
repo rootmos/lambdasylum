@@ -52,6 +52,14 @@ let () =
       "if (zero? 0) 1 2", 1;
       "if (zero? 1) 1 2", 2;
       "if (zero? 7) 1 2", 2;
+
+      "if (leq? 3 4) 1 2", 1;
+      "if (leq? 3 3) 1 2", 1;
+      "if (leq? 4 3) 1 2", 2;
+
+      "if (eq? 3 4) 1 2", 2;
+      "if (eq? 3 3) 1 2", 1;
+      "if (eq? 4 3) 1 2", 2;
     ] in
     List.iter tcs ~f:(fun (s, j) ->
       printf "reducing: %s " s;
