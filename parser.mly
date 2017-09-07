@@ -37,7 +37,7 @@ simple_term:
   ;
 
 operator:
-  | PLUS { `Ident "plus" }
+  | PLUS { `Ident "+" }
   ;
 
 pattern:

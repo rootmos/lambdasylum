@@ -15,3 +15,6 @@ let run_with_pretty_errors ?(err=raise) f =
   | Ulambda.Ulambda_exception (Ulambda.ApplicationError) as e ->
       eprintf "ulambda: trying to apply non-lambda\n";
       err e
+  | Ulambda.Ulambda_exception (Ulambda.UnchurchError s) as e ->
+      eprintf "ulambda: unchurch error: %s\n" s;
+      err e
