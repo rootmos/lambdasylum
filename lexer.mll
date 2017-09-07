@@ -5,7 +5,8 @@
 }
 
 let identifier_initial_char = ['a'-'z']
-let identifier_subsequent_char = identifier_initial_char | ['A'-'Z' '0'-'9' '_']
+let identifier_subsequent_char =
+  identifier_initial_char | ['A'-'Z' '0'-'9' '_' '?']
 let identifier = identifier_initial_char identifier_subsequent_char*
 
 let wildcard_initial_char = '_'

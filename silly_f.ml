@@ -27,6 +27,10 @@ let () =
       "if (or false true) 1 2", 1;
       "if (or true false) 1 2", 1;
       "if (or false false) 1 2", 2;
+
+      "if (zero? 0) 1 2", 1;
+      "if (zero? 1) 1 2", 2;
+      "if (zero? 7) 1 2", 2;
     ] in
     List.iter tcs ~f:(fun (s, j) ->
       printf "reducing: %s " s;

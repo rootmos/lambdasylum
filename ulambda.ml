@@ -69,12 +69,15 @@ let predef: Ctx_term.t = {
     and y = `Ident "y"
     and p = `Ident "p"
     and q = `Ident "q"
+    and n = `Ident "n"
     in [
       "if", `Lambda (x, x);
       "true", `Lambda (x, `Lambda (y, x));
       "false", `Lambda (x, `Lambda (y, y));
       "and", `Lambda (p, `Lambda (q, `App (`App (p, q), p)));
       "or", `Lambda (p, `Lambda (q, `App (`App (p, p), q)));
+      "zero?", `Lambda (n,
+        `App (`App (n, (`Lambda (`Wildcard, `Ident "false"))), `Ident "true"));
     ]
   }
 
