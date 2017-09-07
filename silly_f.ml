@@ -1,4 +1,5 @@
 open Core_kernel.Std
+open Printf
 
 let () =
   Errors.run_with_pretty_errors ~err:(fun _ -> exit 1) (fun () ->
@@ -7,17 +8,30 @@ let () =
       |> Ulambda.church
       |> Ulambda.reduce Ulambda.predef in
     let p ul = ul |> Ulambda.pretty |> print_endline in
-    let i ul = ul
-      |> Ulambda.unchurch_int
-      |> Pervasives.print_int;
-      Pervasives.print_newline ()
+    let i = Ulambda.unchurch_int
     in
-    c "1" |> i;
-    c "1+2" |> i;
-    c "(λx.x) 7" |> i;
-    c "λy.((λx.x) 7)" |> p;
-    c "λy.(λx.x+y) 7" |> p;
-    c "(λ_. 1) 2" |> i;
-    c "if true 1 2" |> i;
-    c "if false 1 2" |> i;
+
+    let tcs = [
+      "1", 1;
+      "1+2", 3;
+
+      "if true 1 2", 1;
+      "if false 1 2", 2;
+
+      "if (and true true) 1 2", 1;
+      "if (and false true) 1 2", 2;
+      "if (and true false) 1 2", 2;
+      "if (and false false) 1 2", 2;
+
+      "if (or true true) 1 2", 1;
+      "if (or false true) 1 2", 1;
+      "if (or true false) 1 2", 1;
+      "if (or false false) 1 2", 2;
+    ] in
+    List.iter tcs ~f:(fun (s, j) ->
+      printf "reducing: %s " s;
+      let j' = c s |> i in
+      printf "->* %d (expected %d)\n" j' j;
+      assert (j = j')
+    )
   )

@@ -64,11 +64,18 @@ let rec substitute n (t: 'a) (t0: 'a): 'a = match t0 with
 module Ctx_term = Ctx(struct type t = value end)
 
 let predef: Ctx_term.t = {
-  bindings = [
-    "if", `Lambda (`Ident "x", `Ident "x");
-    "true", `Lambda (`Ident "x", `Lambda (`Ident "y", `Ident "x"));
-    "false", `Lambda (`Ident "x", `Lambda (`Ident "y", `Ident "y"));
-  ]
+  bindings =
+    let x = `Ident "x"
+    and y = `Ident "y"
+    and p = `Ident "p"
+    and q = `Ident "q"
+    in [
+      "if", `Lambda (x, x);
+      "true", `Lambda (x, `Lambda (y, x));
+      "false", `Lambda (x, `Lambda (y, y));
+      "and", `Lambda (p, `Lambda (q, `App (`App (p, q), p)));
+      "or", `Lambda (p, `Lambda (q, `App (`App (p, p), q)));
+    ]
   }
 
 let rec reduce ctx = function
