@@ -20,6 +20,7 @@ rule read = parse
   | "\\lambda" { LAMBDA }
   | "λ" { LAMBDA }
   | "." { DOT }
+  | ":" { COLON }
   | "+" { PLUS }
   | "*" { STAR }
   | "-" { HYPH }

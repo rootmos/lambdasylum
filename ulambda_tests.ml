@@ -9,7 +9,7 @@ let c s = s
 let p ul = ul |> Ulambda.pretty |> print_endline
 let i = Ulambda.unchurch_int
 
-let () =
+let run = fun _ ->
   Errors.run_with_pretty_errors ~err:(fun _ -> exit 1) (fun () ->
     let tcs = [
       "1", `Int 1;
@@ -88,7 +88,7 @@ let () =
       "(fix (λk.λn.(if (leq? n 1) 1 {(k (n-1))+(k (n-2))})!)) 7", `Int 21;
     ] in
     List.iter tcs ~f:(fun (s, exp) ->
-      printf "reducing: %s " s;
+      printf "ulambda: %s " s;
       match exp with
       | `Int j ->
           let j' = c s |> i in

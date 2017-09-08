@@ -1,22 +1,38 @@
 (jbuild_version 1)
 
-(executable
- ((name ulambda_tests)
-  (libraries (core_kernel))
-  (preprocess (pps (ppx_jane)))))
+;; Lexer
+
+(menhir
+ ((flags (--only-tokens))
+  (modules (tokens))))
 
 (ocamllex (lexer))
+
+
+;; Ulambda
 
 (menhir
  ((flags (--external-tokens Tokens))
   (merge_into ulambda_parser)
   (modules (ulambda_parser tokens))))
 
+
+;; Ulambda
+
 (menhir
- ((flags (--only-tokens))
-  (modules (tokens))))
+ ((flags (--external-tokens Tokens))
+  (merge_into tlambda_parser)
+  (modules (tlambda_parser tokens))))
+
+
+; Tests
+
+(executable
+ ((name tests)
+  (libraries (core_kernel))
+  (preprocess (pps (ppx_jane)))))
 
 (alias
  ((name    runtest)
-  (deps    (ulambda_tests.exe))
+  (deps    (tests.exe))
   (action  (run ${<}))))

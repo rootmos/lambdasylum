@@ -1,5 +1,6 @@
 %token LAMBDA
 %token DOT
+%token COLON
 %token PLUS
 %token STAR
 %token LPAR
