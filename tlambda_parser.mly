@@ -39,9 +39,11 @@ pattern:
   ;
 
 ty:
+  | t1 = ty; ARROW; t2 = ty { `Fun (t1, t2) }
   | i = IDENTIFIER { match i with
     | "int" -> `Int
     | "bool" -> `Bool
     | _ -> failwith "unrecognized type"
   }
+  | t = delimited(LPAR, ty, RPAR) { t }
   ;

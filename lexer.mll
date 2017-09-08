@@ -21,6 +21,7 @@ rule read = parse
   | "λ" { LAMBDA }
   | "." { DOT }
   | ":" { COLON }
+  | "->" { ARROW }
   | "+" { PLUS }
   | "*" { STAR }
   | "-" { HYPH }

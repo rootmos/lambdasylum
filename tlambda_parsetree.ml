@@ -1,6 +1,6 @@
 open Sexplib.Std
 
-type ty = [`Int | `Bool]
+type ty = [`Int | `Bool | `Fun of ty * ty]
 [@@deriving sexp]
 
 type pattern = [`Ident of string * ty | `Wildcard of ty]

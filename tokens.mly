@@ -1,4 +1,5 @@
 %token LAMBDA
+%token ARROW
 %token DOT
 %token COLON
 %token PLUS
