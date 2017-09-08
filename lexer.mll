@@ -17,6 +17,7 @@ let int = ['0'-'9']+
 let ws = [' ' '\t' '\n']+
 
 rule read = parse
+  | "\\lambda" { LAMBDA }
   | "λ" { LAMBDA }
   | "." { DOT }
   | "+" { PLUS }
@@ -24,6 +25,11 @@ rule read = parse
   | "-" { HYPH }
   | '(' { LPAR }
   | ')' { RPAR }
+  | '{' { LBR }
+  | '}' { RBR }
+  | "⊥" { BOT }
+  | '!' { EXCL }
+  | "\\bot" { BOT }
   | ws { read lexbuf }
   | int { INT (int_of_string (L.lexeme lexbuf)) }
   | identifier { IDENTIFIER (L.lexeme lexbuf) }

@@ -1,7 +1,11 @@
 open Printf
 open Core_kernel.Std
 
-type error = Binding of string | ApplicationError | UnchurchError of string
+type error =
+  Binding of string
+| ApplicationError
+| UnchurchError of string
+| ReachedBottom
 exception Ulambda_exception of error
 
 type pattern = [`Ident of string | `Wildcard]
@@ -9,10 +13,15 @@ type pattern = [`Ident of string | `Wildcard]
 type term = [
   `App of term * term
 | `Lambda of pattern * term
-| `Ident of string]
+| `Ident of string
+| `Bottom
+| `Thunk of term
+| `Force of term
+]
 
 type value = [
   `Lambda of pattern * term
+| `Thunk of term
 ]
 
 module Vars = struct
@@ -38,6 +47,9 @@ let rec church t =
   | `Ident n -> `Ident n
   | `Lambda (p, t) -> `Lambda (p, church t)
   | `App (t1, t2) -> `App (church t1, church t2)
+  | `Bottom as t' -> t'
+  | `Thunk t -> `Thunk (church t)
+  | `Force t -> `Force (church t)
 
 module type Value = sig
   type t
@@ -63,6 +75,8 @@ let rec substitute n (t: 'a) (t0: 'a): 'a = match t0 with
   `Ident n' when n = n' -> (t :> 'a)
 | (`Lambda (`Ident n', _) as t') when n = n' -> t'
 | `Lambda (p, t') -> `Lambda (p, substitute n t t')
+| `Thunk t' -> `Thunk (substitute n t t')
+| `Force t' -> `Force (substitute n t t')
 | `App (t1, t2) -> `App (substitute n t t1, substitute n t t2)
 | _ as t' -> t'
 
@@ -99,46 +113,73 @@ let predef: Ctx_term.t = {
       "eq?", `Lambda (m, `Lambda (n,
         `App (`App (`Ident "and", `App (`App (`Ident "leq?", m), n)),
           `App (`App (`Ident "leq?", n), m))));
+
+      "fix", `Lambda (f, `Lambda (x,
+        `App (`App (f, `Thunk (`App (`Ident "fix", f))), x)))
     ]
   }
 
-let rec reduce ctx = function
-| `Lambda x -> `Lambda x
-| `Ident n -> Ctx_term.lookup ctx n
-| `App (f, a) ->
-    let a' = reduce ctx a in
-    begin match reduce ctx f with
-    | `Lambda (`Wildcard, t) -> reduce ctx t
-    | `Lambda (`Ident n, t) ->
-        reduce (Ctx_term.bind ctx n a') (substitute n (a' :> term) t)
-    end
+let rec pretty_term = function
+| `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t)
+| `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t)
+| `App (t1, t2) -> sprintf "(%s) (%s)" (pretty_term t1) (pretty_term t2)
+| `Ident n -> n
+| `Thunk t -> sprintf "{%s}" (pretty_term t)
+| `Force t -> sprintf "%s!" (pretty_term t)
+| `Bottom -> "⊥"
 
 let pretty v =
-  let rec go = function
-    | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (go t)
-    | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (go t)
-    | `App (t1, t2) -> sprintf "(%s) (%s)" (go t1) (go t2)
-    | `Ident n -> n in
   match v with
-  | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (go t)
-  | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (go t)
+  | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t)
+  | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t)
+  | `Thunk t -> sprintf "{%s}" (pretty_term t)
+
+let rec reduce ctx ~k t =
+  (*pretty_term t |> print_endline;*)
+  match t with
+| `Lambda _ | `Thunk _ as t -> k t
+| `Ident n -> k @@ Ctx_term.lookup ctx n
+| `Bottom -> raise @@ Ulambda_exception ReachedBottom
+| `Force t ->
+    reduce ctx t ~k:(function
+      | `Thunk t -> reduce ctx ~k t
+      | t -> t)
+| `App (f, a) ->
+    reduce ctx a ~k:(fun a' ->
+      reduce ctx f ~k:(fun f' ->
+        let rec l = function
+          | `Thunk t -> reduce ctx ~k:l t
+          | `Lambda (`Wildcard, t) -> reduce ctx ~k t
+          | `Lambda (`Ident n, t) ->
+              let ctx' = Ctx_term.bind ctx n a'
+              and t' = substitute n (a' :> term) t in
+              reduce ctx' ~k t' in
+        l f'))
+
 
 
 type term_arith = [
   `App of term_arith * term_arith
 | `Lambda of pattern * term_arith
+| `Force of term_arith
+| `Thunk of term_arith
 | `Ident of string
 | `Succ
+| `Bottom
 | `Int of int]
 
 module Ctx_term_arith = Ctx(struct type t = term_arith end)
 
 let rec reduce_church ctx = function
 | `Succ | `Int _ | `Lambda _ as t' -> t'
+| `Bottom -> raise @@ Ulambda_exception ReachedBottom
+| `Thunk _ | `Force _ -> raise @@ Ulambda_exception
+  (UnchurchError "encountered thunk (ill-formed church numeral")
 | `Ident n -> Ctx_term_arith.lookup ctx n
 | `App (f, a) ->
     match reduce_church ctx f, reduce_church ctx a with
       | `Succ, `Int i -> `Int (succ i)
+      | `Bottom, _ -> raise @@ Ulambda_exception ReachedBottom
       | `Lambda (`Wildcard, t), _ -> reduce_church ctx t
       | `Lambda (`Ident n, t), a' ->
           reduce_church (Ctx_term_arith.bind ctx n a') (substitute n a' t)
@@ -149,7 +190,7 @@ let unchurch_int (t: value) =
   | `Lambda (`Ident fi, `Lambda (`Ident x, t1)) ->
     substitute fi (`Succ) (t1 :> term_arith) |> substitute x (`Int 0)
   | _ -> raise @@ Ulambda_exception
-           (UnchurchError "church numeral should have arity 2")
+           (UnchurchError "church numeral should be a lambda of arity 2")
   in
   match reduce_church Ctx_term_arith.empty t' with
   | `Int i -> i

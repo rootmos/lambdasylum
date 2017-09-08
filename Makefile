@@ -1,6 +1,6 @@
 .PHONY: go
 go: build
-	_build/default/silly_f.exe
+	timeout 3s _build/default/silly_f.exe
 
 .PHONY: build
 build:

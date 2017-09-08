@@ -18,3 +18,6 @@ let run_with_pretty_errors ?(err=raise) f =
   | Ulambda.Ulambda_exception (Ulambda.UnchurchError s) as e ->
       eprintf "ulambda: unchurch error: %s\n" s;
       err e
+  | Ulambda.Ulambda_exception (Ulambda.ReachedBottom) as e ->
+      eprintf "ulambda: code raised runtime error\n";
+      err e
