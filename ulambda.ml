@@ -143,7 +143,7 @@ let rec reduce ctx ~k t =
 | `Force t ->
     reduce ctx t ~k:(function
       | `Thunk t -> reduce ctx ~k t
-      | t -> t)
+      | t -> k t)
 | `App (f, a) ->
     reduce ctx a ~k:(fun a' ->
       reduce ctx f ~k:(fun f' ->

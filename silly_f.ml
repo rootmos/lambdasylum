@@ -1,16 +1,16 @@
 open Core_kernel.Std
 open Printf
 
+let c s = s
+  |> Parse_utils.parse
+  |> Ulambda.church
+  |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)
+
+let p ul = ul |> Ulambda.pretty |> print_endline
+let i = Ulambda.unchurch_int
+
 let () =
   Errors.run_with_pretty_errors ~err:(fun _ -> exit 1) (fun () ->
-    let c s = s
-      |> Parse_utils.parse
-      |> Ulambda.church
-      |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x) in
-    let p ul = ul |> Ulambda.pretty |> print_endline in
-    let i = Ulambda.unchurch_int
-    in
-
     let tcs = [
       "1", `Int 1;
       "(λx.x) 1", `Int 1;
@@ -80,9 +80,12 @@ let () =
       "if false {0} ⊥", `Bottom;
       "(if true {0} {⊥})!", `Int 0;
       "(if false {0} {⊥})!", `Bottom;
+      "(if true 1 {⊥})!", `Int 1;
+      "((if true 1 {2})!)+1", `Int 2;
+      "((if false 1 {2})!)+1", `Int 3;
 
-      "(fix (λk.λn.(if (eq? n 1) {1} {(k (n-1))*n})!)) 5", `Int 120;
-      "(fix (λk.λn.(if (leq? n 1) {1} {(k (n-1))+(k (n-2))})!)) 7", `Int 21;
+      "(fix (λk.λn.(if (eq? n 1) 1 {(k (n-1))*n})!)) 5", `Int 120;
+      "(fix (λk.λn.(if (leq? n 1) 1 {(k (n-1))+(k (n-2))})!)) 7", `Int 21;
     ] in
     List.iter tcs ~f:(fun (s, exp) ->
       printf "reducing: %s " s;
@@ -105,5 +108,4 @@ let () =
           | Ulambda.Ulambda_exception Ulambda.ReachedBottom ->
               printf "reached bottom\n"
     );
-
   )
