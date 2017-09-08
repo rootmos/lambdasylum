@@ -2,7 +2,7 @@ open Core_kernel.Std
 open Printf
 
 let c s = s
-  |> Parse_utils.parse
+  |> Ulambda.parse
   |> Ulambda.church
   |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)
 

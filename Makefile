@@ -1,7 +1,7 @@
-.PHONY: go
-go: build
-	timeout 3s _build/default/silly_f.exe
+.PHONY: test
+test:
+	timeout 3s jbuilder runtest
 
-.PHONY: build
-build:
-	jbuilder build silly_f.exe
+.PHONY: clean
+clean:
+	rm -rf _build

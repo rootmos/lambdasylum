@@ -1,5 +1,5 @@
 {
-  open Parser
+  open Tokens
   module L = Lexing
   exception Syntax_error of string
 }

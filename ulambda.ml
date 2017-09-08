@@ -2,11 +2,26 @@ open Printf
 open Core_kernel.Std
 
 type error =
-  Binding of string
+  Lexing of string
+| Parsing
+| Binding of string
 | ApplicationError
 | UnchurchError of string
 | ReachedBottom
 exception Ulambda_exception of error
+
+let explain = function
+  Parsing -> sprintf "parsing error"
+| Lexing s -> sprintf "lexing error: %s" s
+| Binding n -> sprintf "ill-scoped identifier: %s" n
+| ApplicationError -> "trying to apply non-lambda"
+| UnchurchError s -> sprintf "unchurch error: %s" s
+| ReachedBottom -> "code raised runtime error"
+
+let parse s =
+  try Lexing.from_string s |> Ulambda_parser.program Lexer.read with
+  | Ulambda_parser.Error -> raise @@ Ulambda_exception Parsing
+  | Lexer.Syntax_error msg -> raise @@ Ulambda_exception (Lexing msg)
 
 type pattern = [`Ident of string | `Wildcard]
 
@@ -24,19 +39,6 @@ type value = [
 | `Thunk of term
 ]
 
-module Vars = struct
-  let f = `Ident "f"
-  let g = `Ident "g"
-  let h = `Ident "h"
-  let m = `Ident "m"
-  let n = `Ident "n"
-  let p = `Ident "p"
-  let q = `Ident "q"
-  let u = `Ident "u"
-  let x = `Ident "x"
-  let y = `Ident "y"
-end
-
 let rec church t =
   let open Vars in
   let rec go ?(acc=x) = function
@@ -51,11 +53,7 @@ let rec church t =
   | `Thunk t -> `Thunk (church t)
   | `Force t -> `Force (church t)
 
-module type Value = sig
-  type t
-end
-
-module Ctx(V: Value) = struct
+module Ctx(V: sig type t end) = struct
   type bindings = (string * V.t) list
   type t = {
     bindings: bindings

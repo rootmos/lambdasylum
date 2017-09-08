@@ -1,10 +1,22 @@
 (jbuild_version 1)
 
 (executable
- ((name silly_f)
+ ((name ulambda_tests)
   (libraries (core_kernel))
   (preprocess (pps (ppx_jane)))))
 
 (ocamllex (lexer))
+
 (menhir
- ((modules (parser))))
+ ((flags (--external-tokens Tokens))
+  (merge_into ulambda_parser)
+  (modules (ulambda_parser tokens))))
+
+(menhir
+ ((flags (--only-tokens))
+  (modules (tokens))))
+
+(alias
+ ((name    runtest)
+  (deps    (ulambda_tests.exe))
+  (action  (run ${<}))))
