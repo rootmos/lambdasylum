@@ -14,6 +14,7 @@
 %token <string> WILDCARD
 %token <string> IDENTIFIER
 %token <int> INT
+%token <char> HASH
 %token EOF
 
 %%

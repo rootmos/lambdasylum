@@ -34,6 +34,7 @@ rule read = parse
   | "\\bot" { BOT }
   | ws { read lexbuf }
   | int { INT (int_of_string (L.lexeme lexbuf)) }
+  | '#' (['a'-'z'] as c) { HASH c }
   | identifier { IDENTIFIER (L.lexeme lexbuf) }
   | wildcard { WILDCARD (L.lexeme lexbuf) }
   | eof { EOF }

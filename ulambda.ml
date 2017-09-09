@@ -1,5 +1,4 @@
 open Printf
-open Core_kernel.Std
 
 type error =
   Lexing of string
@@ -53,22 +52,6 @@ let rec church t =
   | `Thunk t -> `Thunk (church t)
   | `Force t -> `Force (church t)
 
-module Ctx(V: sig type t end) = struct
-  type bindings = (string * V.t) list
-  type t = {
-    bindings: bindings
-  }
-
-  let empty = { bindings = [] }
-
-  let bind ctx n v = { bindings = (n, v) :: ctx.bindings }
-
-  let lookup ctx n =
-    match List.Assoc.find ~equal:(=) ctx.bindings n with
-    | Some v -> v
-    | None -> raise @@ Ulambda_exception (Binding n)
-end
-
 let rec substitute n (t: 'a) (t0: 'a): 'a = match t0 with
   `Ident n' when n = n' -> (t :> 'a)
 | (`Lambda (`Ident n', _) as t') when n = n' -> t'
@@ -78,7 +61,10 @@ let rec substitute n (t: 'a) (t0: 'a): 'a = match t0 with
 | `App (t1, t2) -> `App (substitute n t t1, substitute n t t2)
 | _ as t' -> t'
 
-module Ctx_term = Ctx(struct type t = value end)
+module Ctx_term = Bindings.Make(struct
+  type t = value
+  let subsystem = "reducing ulambda"
+end)
 
 let predef: Ctx_term.t = {
   bindings =
@@ -166,7 +152,10 @@ type term_arith = [
 | `Bottom
 | `Int of int]
 
-module Ctx_term_arith = Ctx(struct type t = term_arith end)
+module Ctx_term_arith = Bindings.Make(struct
+  type t = term_arith
+  let subsystem = "reducing Chruch-encoded ulambda term"
+end)
 
 let rec reduce_church ctx = function
 | `Succ | `Int _ | `Lambda _ as t' -> t'
