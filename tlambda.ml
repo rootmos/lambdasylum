@@ -45,3 +45,10 @@ let rec typecheck ~ctx = function
     match typecheck ~ctx f, typecheck ~ctx a with
     | `Fun (a0, ty), a1 when a0 = a1 -> ty
     | t0, t1 -> raise @@ Tlambda_exception (IllTypedApplication (t0, t1))
+
+let rec erase = function
+  `Int _ | `Bool _ | `Ident _ | `Bottom as t -> t
+| `Thunk t -> `Thunk (erase t)
+| `Force t -> `Force (erase t)
+| `Lambda (p, _, t) -> `Lambda (p, erase t)
+| `App (t0, t1) -> `App (erase t0, erase t1)

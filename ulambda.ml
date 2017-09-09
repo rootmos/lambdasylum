@@ -45,6 +45,8 @@ let rec church t =
     | i -> go ~acc:(`App (f, acc)) (i-1) in
   match t with
   | `Int i -> go i
+  | `Bool true -> `Lambda (x, `Lambda (y, x))
+  | `Bool false -> `Lambda (x, `Lambda (y, y))
   | `Ident n -> `Ident n
   | `Lambda (p, t) -> `Lambda (p, church t)
   | `App (t1, t2) -> `App (church t1, church t2)
@@ -70,8 +72,6 @@ let predef: Ctx_term.t = {
   bindings =
     let open Vars in [
       "if", `Lambda (x, x);
-      "true", `Lambda (x, `Lambda (y, x));
-      "false", `Lambda (x, `Lambda (y, y));
       "and", `Lambda (p, `Lambda (q, `App (`App (p, q), p)));
       "or", `Lambda (p, `Lambda (q, `App (`App (p, p), q)));
 
@@ -82,7 +82,9 @@ let predef: Ctx_term.t = {
       "-", `Lambda (m, `Lambda (n,
         (`App (`App (n, `Ident "pred"), m))));
       "zero?", `Lambda (n,
-        `App (`App (n, (`Lambda (`Wildcard, `Ident "false"))), `Ident "true"));
+        `App (
+          `App (n, (`Lambda (`Wildcard, `Lambda (x, `Lambda (y, y))))),
+          `Lambda (x, `Lambda (y, x))));
       "succ", `Lambda (n, `Lambda (f, `Lambda (x,
         `App (f, `App (`App (n, f), x)))));
       "pred", `Lambda (n, `Lambda (f, `Lambda (x,

@@ -25,7 +25,7 @@ simple_term:
   | h = HASH { match h with
     | 't' -> `Bool true
     | 'f' -> `Bool false
-    | _ -> failwith "unrecognized hash value" (* TODO: add proper menhir error *)
+    | _ -> raise Error
   }
   | BOT { `Bottom }
   | t = delimited(LPAR, inner_term, RPAR) { t }
@@ -48,7 +48,7 @@ ty:
   | i = IDENTIFIER { match i with
     | "int" -> `Int
     | "bool" -> `Bool
-    | _ -> failwith "unrecognized type" (* TODO: add proper menhir error *)
+    | _ -> raise Error
   }
   | t = delimited(LPAR, ty, RPAR) { t }
   ;

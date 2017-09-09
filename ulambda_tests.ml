@@ -38,18 +38,18 @@ let run = fun _ ->
       "pred 2", `Int 1;
       "pred 7", `Int 6;
 
-      "if true 1 2", `Int 1;
-      "if false 1 2", `Int 2;
+      "if #t 1 2", `Int 1;
+      "if #f 1 2", `Int 2;
 
-      "if (and true true) 1 2", `Int 1;
-      "if (and false true) 1 2", `Int 2;
-      "if (and true false) 1 2", `Int 2;
-      "if (and false false) 1 2", `Int 2;
+      "if (and #t #t) 1 2", `Int 1;
+      "if (and #f #t) 1 2", `Int 2;
+      "if (and #t #f) 1 2", `Int 2;
+      "if (and #f #f) 1 2", `Int 2;
 
-      "if (or true true) 1 2", `Int 1;
-      "if (or false true) 1 2", `Int 1;
-      "if (or true false) 1 2", `Int 1;
-      "if (or false false) 1 2", `Int 2;
+      "if (or #t #t) 1 2", `Int 1;
+      "if (or #f #t) 1 2", `Int 1;
+      "if (or #t #f) 1 2", `Int 1;
+      "if (or #f #f) 1 2", `Int 2;
 
       "if (zero? 0) 1 2", `Int 1;
       "if (zero? 1) 1 2", `Int 2;
@@ -75,14 +75,14 @@ let run = fun _ ->
 
       "{λx.x} 2", `Int 2;
 
-      "if true 0 {⊥}", `Int 0;
-      "if false {⊥} 1", `Int 1;
-      "if false {0} ⊥", `Bottom;
-      "(if true {0} {⊥})!", `Int 0;
-      "(if false {0} {⊥})!", `Bottom;
-      "(if true 1 {⊥})!", `Int 1;
-      "((if true 1 {2})!)+1", `Int 2;
-      "((if false 1 {2})!)+1", `Int 3;
+      "if #t 0 {⊥}", `Int 0;
+      "if #f {⊥} 1", `Int 1;
+      "if #f {0} ⊥", `Bottom;
+      "(if #t {0} {⊥})!", `Int 0;
+      "(if #f {0} {⊥})!", `Bottom;
+      "(if #t 1 {⊥})!", `Int 1;
+      "((if #t 1 {2})!)+1", `Int 2;
+      "((if #f 1 {2})!)+1", `Int 3;
 
       "(fix (λk.λn.(if (eq? n 1) 1 {(k (n-1))*n})!)) 5", `Int 120;
       "(fix (λk.λn.(if (leq? n 1) 1 {(k (n-1))+(k (n-2))})!)) 7", `Int 21;

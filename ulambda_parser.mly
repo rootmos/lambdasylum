@@ -22,6 +22,11 @@ simple_term:
   | t = simple_term; EXCL { `Force t }
   | i = IDENTIFIER { `Ident i }
   | i = INT { `Int i }
+  | h = HASH { match h with
+    | 't' -> `Bool true
+    | 'f' -> `Bool false
+    | _ -> raise Error
+  }
   | BOT { `Bottom }
   | t = delimited(LPAR, inner_term, RPAR) { t }
   | t = delimited(LBR, inner_term, RBR) { `Thunk t }

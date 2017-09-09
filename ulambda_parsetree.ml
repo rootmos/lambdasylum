@@ -5,6 +5,7 @@ type term = [
 | `Lambda of pattern * term
 | `Ident of string
 | `Int of int
+| `Bool of bool
 | `Bottom
 | `Thunk of term
 | `Force of term
