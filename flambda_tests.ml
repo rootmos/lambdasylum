@@ -6,7 +6,7 @@ let pretty_ty t = Flambda_parsetree.sexp_of_ty t |> p
 
 let c s =
   let fl = Flambda.parse s in
-  let _ = Flambda.typecheck Flambda.TyCtx.empty fl in
+  let _ = Flambda.typecheck Flambda.predef fl in
 
   Flambda.erase fl
   |> Ulambda.church
@@ -20,6 +20,11 @@ let run = fun _ ->
       "(ΛT.λx:T.x) [bool] 0", `TypeError;
       "(λf:∀T.T->T.f [int] 0) (ΛA.λa:A.a)", `Int 0;
       "(λf:∀T.∀T.T->T.f [bool] [int] 0) (ΛB.ΛA.λa:A.a)", `Int 0;
+
+      "if [int] #t 0 1", `Int 0;
+      "if [int] #f 0 1", `Int 1;
+      "(if [{int}] #t {0} {⊥})!", `Int 0;
+      "(if [{int}] #f {⊥} {1})!", `Int 1;
     ] in
     List.iter tcs ~f:(fun (s, exp) ->
       printf "flambda: %s " s;

@@ -1,4 +1,5 @@
 %start <Flambda_parsetree.term> program
+%start <Flambda_parsetree.ty> ty_eof
 
 %%
 
@@ -45,6 +46,10 @@ pattern:
   | i = IDENTIFIER { `Ident i }
   ;
 
+ty_eof:
+  | ty = ty; EOF { ty }
+  ;
+
 ty:
   | t1 = ty; ARROW; t2 = ty { `Fun (t1, t2) }
   | FORALL; tv = ty_var; DOT; t = ty { `Forall (tv, t) }
@@ -54,6 +59,7 @@ ty:
     | _ -> raise Error
   }
   | i = TY_IDENT { `TyIdent i }
+  | t = delimited(LBR, ty, RBR) { `Thunk t }
   | t = delimited(LPAR, ty, RPAR) { t }
   ;
 

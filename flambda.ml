@@ -17,6 +17,8 @@ let parse s =
   | Flambda_parser.Error -> raise @@ Flambda_exception Parsing
   | Lexer.Syntax_error msg -> raise @@ Flambda_exception (Lexing msg)
 
+let parse_type s = Lexing.from_string s |> Flambda_parser.ty_eof Lexer.read
+
 let explain = function
   Parsing -> sprintf "parsing error"
 | Lexing s -> sprintf "lexing error: %s" s
@@ -28,7 +30,16 @@ let explain = function
 module TyCtx = Bindings.Make(struct
   type t = ty
   let subsystem = "typechecking flambda"
+
 end)
+
+let predef = TyCtx.(
+  {
+    bindings = [
+      "if", parse_type "∀T.bool->T->T->T"
+    ]
+  }
+)
 
 let rec substitute i ty = function
   `Fun (t0, t1) -> `Fun (substitute i ty t0, substitute i ty t1)
@@ -51,6 +62,13 @@ let rec de_brujin_type ?(ctx=[]) = function
     end
 | `Forall (n, t) ->
     let ctx = n :: ctx in `Forall (de_brujin_type ~ctx t)
+
+let rec subtype t s =
+  match t, s with
+  | `Bottom, _ -> true
+  | `Thunk t', `Thunk s' -> subtype t' s'
+  | _, _ when t = s -> true
+  | _ -> false
 
 let rec typecheck ~ctx = function
   `Int _ -> `Int
@@ -76,7 +94,8 @@ let rec typecheck ~ctx = function
 | `Lambda (`Wildcard, ty, e) -> `Fun (ty, typecheck ~ctx e)
 | `App (f, a) ->
     match typecheck ~ctx f, typecheck ~ctx a with
-    | `Fun (a0, ty), a1 when (de_brujin_type a0) = (de_brujin_type a1) -> ty
+    | `Fun (a0, ty), a1 when
+      subtype (de_brujin_type a1) (de_brujin_type a0) -> ty
     | t0, t1 -> raise @@ Flambda_exception (IllTypedApplication (t0, t1))
 
 let rec erase = function
