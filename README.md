@@ -1,4 +1,9 @@
 # Lambdasylum
+The lambda asylum is a place to try out different kinds of lambda calculi.
+Currently the following calculi are implemented:
+* untyped lambda calculus (in `ulambda`)
+* simply type lambda calculus (in `tlambda`)
+* System F (in `flambda`)
 
 ## Examples for `ulambda`
 `1` ⟶ `1`
