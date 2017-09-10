@@ -12,9 +12,10 @@ let () = Out_channel.with_file (Sys.getenv "README") ~f:(fun out ->
   o "# Lambdasylum";
   o "The lambda asylum is a place to try out different kinds of lambda calculi.";
   o "Currently the following calculi are implemented:";
-  o "* untyped lambda calculus (in `ulambda`)";
-  o "* simply type lambda calculus (in `tlambda`)";
-  o "* System F (in `flambda`)";
+  o "* [untyped lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus) (in [`ulambda`](../master/ulambda.ml))";
+  o "  with [Church encoded](https://en.wikipedia.org/wiki/Church_encoding) natural numbers and booleans";
+  o "* [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))";
+  o "* [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))";
   nl ();
 
   Ulambda_tests.markdown out;

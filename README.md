@@ -1,9 +1,10 @@
 # Lambdasylum
 The lambda asylum is a place to try out different kinds of lambda calculi.
 Currently the following calculi are implemented:
-* untyped lambda calculus (in `ulambda`)
-* simply type lambda calculus (in `tlambda`)
-* System F (in `flambda`)
+* [untyped lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus) (in [`ulambda`](../master/ulambda.ml))
+  with [Church encoded](https://en.wikipedia.org/wiki/Church_encoding) natural numbers and booleans
+* [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))
+* [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))
 
 ## Examples for `ulambda`
 `1` ⟶ `1`
