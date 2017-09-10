@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	timeout 3s jbuilder runtest
+	README=$(PWD)/README.md timeout 3s jbuilder runtest
 
 .PHONY: clean
 clean:

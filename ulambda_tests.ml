@@ -9,7 +9,8 @@ let c s = s
 let p ul = ul |> Ulambda.pretty |> print_endline
 
 module T = Test_suite.Make2(struct
-  let name = "flambda"
+  let name = "ulambda"
+  include Test_suite.Stdout(struct let name = name end)
   let compile = c
   let cases = [
     "1", `Int 1;
@@ -89,4 +90,7 @@ module T = Test_suite.Make2(struct
   ]
 end)
 
-let run () = Errors.run_with_pretty_errors ~err:(fun _ -> exit 1) T.run
+let run () = Errors.run_with_pretty_errors ~err:(fun _ -> exit 1)
+  (T.run T.stdout)
+
+let markdown out = T.(run (markdown out) ())

@@ -14,6 +14,7 @@ let c s =
 
 module T = Test_suite.Make2(struct
   let name = "tlambda"
+  include Test_suite.Stdout(struct let name = name end)
   let compile = c
   let cases = [
     "(λx:int.x) 0", `Int 0;
@@ -28,4 +29,7 @@ module T = Test_suite.Make2(struct
   ]
 end)
 
-let run () = Errors.run_with_pretty_errors ~err:(fun _ -> exit 1) T.run
+let run () = Errors.run_with_pretty_errors ~err:(fun _ -> exit 1)
+  (T.run T.stdout)
+
+let markdown out = T.(run (markdown out) ())

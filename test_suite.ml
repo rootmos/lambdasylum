@@ -2,6 +2,30 @@ open Core_kernel.Std
 
 type expect = [`Int of int | `Bottom | `TypeError | `Thunk]
 
+module type Output_t = sig
+  val before_suite: unit -> unit
+  val after_suite: unit -> unit
+  val test_case_result: string -> string -> unit
+end
+
+module Stdout(T: sig
+  val name: string
+end) = struct
+  let before_suite () = ()
+  let after_suite () = ()
+  let test_case_result s v = printf "%s: %s ⟶ %s\n" T.name s v
+end
+
+module Markdown(T: sig
+  val name: string
+  val out: Out_channel.t
+end) = struct
+  open T
+  let before_suite () = fprintf out "## Examples for `%s`\n" name
+  let after_suite () = fprintf out "\n"
+  let test_case_result s v = fprintf out "`%s` ⟶ `%s`\n\n" s v
+end
+
 module Make(T: sig
   type t
   val name: string
@@ -11,17 +35,18 @@ module Make(T: sig
   val cases: (string * expect) list
 end) = struct
   include T
-  let run () = List.iter cases ~f:(fun (s, exp) ->
-    printf "%s: %s ⟶ " name s;
+  let run (module O: Output_t) () =
+    O.before_suite ();
+    List.iter cases ~f:(fun (s, exp) ->
     match exp with
     | `Int j ->
         let j' = compile s |> int_of_v in
-        printf "%d\n" j';
-        assert (j = j')
+        assert (j = j');
+        O.test_case_result s (string_of_int j')
     | `TypeError ->
         begin try begin
           let _ = compile s in
-          printf "typed unexpectedly\n";
+          eprintf "typed unexpectedly\n";
           assert (false);
         end with
         | Tlambda.Tlambda_exception (Tlambda.ForcingNonThunk _)
@@ -29,21 +54,29 @@ end) = struct
         | Flambda.Flambda_exception (Flambda.ForcingNonThunk _)
         | Flambda.Flambda_exception (Flambda.IllTypedApplication _)
         | Flambda.Flambda_exception (Flambda.IllTypedTypeApplication) ->
-            printf "type error\n"
+            O.test_case_result s "type error"
         end
     | `Bottom ->
         begin try begin
           let _ = compile s in
-          printf "did not reach bottom\n";
+          eprintf "did not reach bottom\n";
           assert (false);
         end with
         | Ulambda.Ulambda_exception Ulambda.ReachedBottom ->
-            printf "reached bottom\n"
+            O.test_case_result s "reached bottom"
         end
     | `Thunk ->
         assert (compile s |> is_thunk);
-        printf "{...}\n";
+        O.test_case_result s "{..}"
   );
+  O.after_suite ()
+
+  let stdout = (module Stdout(struct let name = name end): Output_t)
+  let markdown out =
+    (module Markdown(struct
+      let name = name
+      let out = out
+    end): Output_t)
 end
 
 module Make2(T: sig
