@@ -12,10 +12,8 @@ exception Tlambda_exception of error
 let explain = function
   Parsing -> sprintf "parsing error"
 | Lexing s -> sprintf "lexing error: %s" s
-| IllTypedApplication (_, _) ->
-    sprintf "ill-typed application" (* TODO: add pretty types *)
-| ForcingNonThunk _ ->
-    sprintf "forcing non-thunk" (* TODO: add pretty types *)
+| IllTypedApplication (_, _) -> sprintf "ill-typed application"
+| ForcingNonThunk _ -> sprintf "forcing non-thunk"
 
 let parse s =
   try Lexing.from_string s |> Tlambda_parser.program Lexer.read with

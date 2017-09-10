@@ -10,19 +10,23 @@
 
 
 ;; Ulambda
-
 (menhir
  ((flags (--external-tokens Tokens))
   (merge_into ulambda_parser)
   (modules (ulambda_parser tokens))))
 
 
-;; Ulambda
-
+;; Tlambda
 (menhir
  ((flags (--external-tokens Tokens))
   (merge_into tlambda_parser)
   (modules (tlambda_parser tokens))))
+
+;; Flambda
+(menhir
+ ((flags (--external-tokens Tokens))
+  (merge_into flambda_parser)
+  (modules (flambda_parser tokens))))
 
 
 ; Tests
