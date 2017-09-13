@@ -7,11 +7,17 @@ Currently the following calculi are implemented:
 * [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))
 
 ## Examples for `ulambda`
+`0` ⟶ `0`
+
 `1` ⟶ `1`
 
 `(λx.x) 1` ⟶ `1`
 
 `(\lambda x.x) 1` ⟶ `1`
+
+`#t` ⟶ `true`
+
+`#f` ⟶ `false`
 
 `1+2` ⟶ `3`
 
@@ -50,6 +56,14 @@ Currently the following calculi are implemented:
 `if #t 1 2` ⟶ `1`
 
 `if #f 1 2` ⟶ `2`
+
+`and #t #t` ⟶ `true`
+
+`and #f #t` ⟶ `false`
+
+`and #t #f` ⟶ `false`
+
+`and #f #f` ⟶ `false`
 
 `if (and #t #t) 1 2` ⟶ `1`
 

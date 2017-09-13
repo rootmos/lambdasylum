@@ -7,7 +7,7 @@ use strict;
 my $filter = new RlwrapFilter;
 
 $filter -> input_handler(\&expand_symbols);
-$filter -> echo_handler(\&expand_symbols);
+$filter -> history_handler(\&expand_symbols);
 $filter -> completion_handler(\&complete_symbol);
 $filter -> run;
 

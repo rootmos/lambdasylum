@@ -3,5 +3,5 @@
 rlwrap \
     --extra-char-after-completion='' \
     --break-chars='.(){}' \
-    -z ./rlwrap-replace-escaped-lambdas.pl \
+    --filter ./rlwrap-replace-escaped-lambdas.pl \
     $*

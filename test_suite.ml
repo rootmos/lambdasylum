@@ -1,6 +1,6 @@
 open Core_kernel.Std
 
-type expect = [`Int of int | `Bottom | `TypeError | `Thunk]
+type expect = [`Int of int | `Bool of bool | `Bottom | `TypeError | `Thunk]
 
 module type Output_t = sig
   val before_suite: unit -> unit
@@ -31,6 +31,7 @@ module Make(T: sig
   val name: string
   val compile: string -> t
   val int_of_v: t -> int
+  val bool_of_v: t -> bool
   val is_thunk: t -> bool
   val cases: (string * expect) list
 end) = struct
@@ -43,6 +44,10 @@ end) = struct
         let j' = compile s |> int_of_v in
         assert (j = j');
         O.test_case_result s (string_of_int j')
+    | `Bool b ->
+        let b' = compile s |> bool_of_v in
+        assert (b = b');
+        O.test_case_result s (string_of_bool b')
     | `TypeError ->
         begin try begin
           let _ = compile s in
@@ -86,7 +91,8 @@ module Make2(T: sig
 end) = Make(struct
   include T
   type t = Ulambda.value
-  let int_of_v = Ulambda.unchurch_int
+  let int_of_v v = Ulambda.Church.(unchurch_int v |> ok_exn)
+  let bool_of_v v = Ulambda.Church.(unchurch_bool v |> ok_exn)
   let is_thunk = function
     | `Thunk _ -> true
     | _ -> false

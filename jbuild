@@ -1,7 +1,6 @@
 (jbuild_version 1)
 
 ;; Lexer
-
 (menhir
  ((flags (--only-tokens))
   (modules (tokens))))
@@ -28,14 +27,13 @@
   (merge_into flambda_parser)
   (modules (flambda_parser tokens))))
 
-
-; Tests
-
-(executable
- ((name tests)
-  (libraries (core_kernel))
+;; Executables
+(executables
+ ((names (tests repl))
+  (libraries (core_kernel core_extended))
   (preprocess (pps (ppx_jane)))))
 
+; Tests
 (alias
  ((name    runtest)
   (deps    (tests.exe))
