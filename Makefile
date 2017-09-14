@@ -1,5 +1,6 @@
 .PHONY: test
 test:
+	jbuilder build tests.exe
 	README=$(PWD)/README.md timeout 3s jbuilder runtest
 
 .PHONY: repl
