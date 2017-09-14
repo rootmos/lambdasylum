@@ -22,7 +22,5 @@ module T = Test_suite.Make2(struct
   ]
 end)
 
-let run () = Errors.run_with_pretty_errors ~err:(fun _ -> exit 1)
-  (T.run T.stdout)
-
+let run = T.(run stdout)
 let markdown out = T.(run (markdown out) ())

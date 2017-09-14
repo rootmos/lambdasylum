@@ -1,9 +1,10 @@
 open Core_kernel.Std
 
-let () =
+let () = Errors.run_with_pretty_errors ~err:(fun _ -> exit 1) (fun () ->
   Ulambda_tests.run ();
   Tlambda_tests.run ();
   Flambda_tests.run ()
+)
 
 let () = Out_channel.with_file (Sys.getenv "README") ~f:(fun out ->
   let nl () = Out_channel.newline out in
