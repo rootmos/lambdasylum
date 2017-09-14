@@ -1,10 +1,18 @@
 # Lambdasylum
+[![Build Status](https://travis-ci.org/rootmos/lambdasylum.svg?branch=master)](https://travis-ci.org/rootmos/lambdasylum)
+
 The lambda asylum is a place to try out different kinds of lambda calculi.
 Currently the following calculi are implemented:
 * [untyped lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus) (in [`ulambda`](../master/ulambda.ml))
   with [Church encoded](https://en.wikipedia.org/wiki/Church_encoding) natural numbers and booleans
 * [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))
 * [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))
+
+##Usage
+Simplest way to try it out is by using Docker:
+```
+docker run -it rootmos/lambdasylum
+```
 
 ## Examples for `ulambda`
 `0` ⟶ `0`
