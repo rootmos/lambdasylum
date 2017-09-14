@@ -25,6 +25,5 @@ let rec repl c () =
   )
 
 let () =
-  print_endline "Welcome to the Lambdasylum!";
   let c = { name = "ulambda"; compile = Ulambda.compile } in
   repl c ()

@@ -30,7 +30,7 @@
 ;; Executables
 (executables
  ((names (tests repl))
-  (libraries (core_kernel core_extended))
+  (libraries (core_kernel))
   (preprocess (pps (ppx_jane)))))
 
 ; Tests
