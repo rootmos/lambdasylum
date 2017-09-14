@@ -1,3 +1,4 @@
+open Core_kernel.Std
 open Printf
 
 type error =
@@ -105,21 +106,6 @@ let predef: Ctx_term.t = {
     ]
   }
 
-let rec pretty_term = function
-| `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t)
-| `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t)
-| `App (t1, t2) -> sprintf "(%s) (%s)" (pretty_term t1) (pretty_term t2)
-| `Ident n -> n
-| `Thunk t -> sprintf "{%s}" (pretty_term t)
-| `Force t -> sprintf "%s!" (pretty_term t)
-| `Bottom -> "⊥"
-
-let pretty v =
-  match v with
-  | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t)
-  | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t)
-  | `Thunk t -> sprintf "{%s}" (pretty_term t)
-
 let rec reduce ctx ~k t =
   (*pretty_term t |> print_endline;*)
   match t with
@@ -143,45 +129,109 @@ let rec reduce ctx ~k t =
         l f'))
 
 
+module Church = struct
 
-type term_arith = [
-  `App of term_arith * term_arith
-| `Lambda of pattern * term_arith
-| `Force of term_arith
-| `Thunk of term_arith
-| `Ident of string
-| `Succ
-| `Bottom
-| `Int of int]
+  type term_arith = [
+    `App of term_arith * term_arith
+  | `Lambda of pattern * term_arith
+  | `Force of term_arith
+  | `Thunk of term_arith
+  | `Ident of string
+  | `Succ
+  | `Bottom
+  | `Int of int
+  | `Bool of bool
+  ]
 
-module Ctx_term_arith = Bindings.Make(struct
-  type t = term_arith
-  let subsystem = "reducing Chruch-encoded ulambda term"
-end)
+  type value_arith = [
+  | `Lambda of pattern * term_arith
+  | `Thunk of term_arith
+  | `Int of int
+  | `Bool of bool
+  ]
 
-let rec reduce_church ctx = function
-| `Succ | `Int _ | `Lambda _ as t' -> t'
-| `Bottom -> raise @@ Ulambda_exception ReachedBottom
-| `Thunk _ | `Force _ -> raise @@ Ulambda_exception
-  (UnchurchError "encountered thunk (ill-formed church numeral")
-| `Ident n -> Ctx_term_arith.lookup ctx n
-| `App (f, a) ->
-    match reduce_church ctx f, reduce_church ctx a with
-      | `Succ, `Int i -> `Int (succ i)
-      | `Bottom, _ -> raise @@ Ulambda_exception ReachedBottom
-      | `Lambda (`Wildcard, t), _ -> reduce_church ctx t
-      | `Lambda (`Ident n, t), a' ->
-          reduce_church (Ctx_term_arith.bind ctx n a') (substitute n a' t)
-      | _ -> raise @@ Ulambda_exception (UnchurchError "ill-typed application")
+  module Ctx_term_arith = Bindings.Make(struct
+    type t = term_arith
+    let subsystem = "reducing Chruch-encoded ulambda term"
+  end)
 
-let unchurch_int (t: value) =
-  let t' = match t with
-  | `Lambda (`Ident fi, `Lambda (`Ident x, t1)) ->
-    substitute fi (`Succ) (t1 :> term_arith) |> substitute x (`Int 0)
-  | _ -> raise @@ Ulambda_exception
-           (UnchurchError "church numeral should be a lambda of arity 2")
-  in
-  match reduce_church Ctx_term_arith.empty t' with
-  | `Int i -> i
-  | _ -> raise @@ Ulambda_exception
-           (UnchurchError "term did not reduce to a number")
+  open Result
+  open Let_syntax
+
+  let rec reduce_church ctx = function
+  | `Succ | `Int _ | `Bool _ | `Lambda _ as t' -> return t'
+  | `Bottom -> fail "reached bottom"
+  | `Thunk _ | `Force _ -> fail "encountered thunk (ill-formed church numeral)"
+  | `Ident n -> return @@ Ctx_term_arith.lookup ctx n
+  | `App (f, a) ->
+      let%bind f' = reduce_church ctx f
+      and a' = reduce_church ctx a in
+      match f', a' with
+        | `Succ, `Int i -> return @@ `Int (succ i)
+        | `Bottom, _ -> fail "reached bottom"
+        | `Lambda (`Wildcard, t), _ -> reduce_church ctx t
+        | `Lambda (`Ident n, t), a' ->
+            reduce_church (Ctx_term_arith.bind ctx n a') (substitute n a' t)
+        | _ -> fail "ill-typed application"
+
+  let unchurch_int (t: value) =
+    let call_with_succ = match t with
+      | `Lambda (`Ident fi, `Lambda (`Ident x, t1)) -> return (
+        substitute fi (`Succ) (t1 :> term_arith) |> substitute x (`Int 0)
+      )
+      | _ -> fail "church numeral should be a lambda of arity 2" in
+    let assume_int = function
+      | `Int i -> return i
+      | _ -> fail "term did not reduce to a number" in
+    call_with_succ >>= reduce_church Ctx_term_arith.empty >>= assume_int
+
+  let unchurch_bool (t: value) =
+    let call_with_true_and_false = match t with
+      | `Lambda (`Ident t, `Lambda (`Ident f, t1)) -> return (
+        substitute t (`Bool true) (t1 :> term_arith)
+          |> substitute f (`Bool false)
+      )
+      | _ -> fail "church numeral should be a lambda of arity 2" in
+    let assume_bool = function
+      | `Bool b -> return b
+      | _ -> fail "term did not reduce to a boolean" in
+    call_with_true_and_false
+      >>= reduce_church Ctx_term_arith.empty
+      >>= assume_bool
+
+  let unchurch (t: value) =
+    let i = unchurch_int t and b = unchurch_bool t in
+    match b, i with
+    | Ok b, _ -> `Bool b
+    | _, Ok i -> `Int i
+    | _ -> (t :> value_arith)
+
+  let ok_exn r = r
+      |> map_error ~f:(fun r -> Ulambda_exception (UnchurchError r))
+      |> ok_exn
+
+  let rec pretty_term = function
+  | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t)
+  | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t)
+  | `App (t1, t2) -> sprintf "(%s) (%s)" (pretty_term t1) (pretty_term t2)
+  | `Ident n -> n
+  | `Thunk t -> sprintf "{%s}" (pretty_term t)
+  | `Force t -> sprintf "%s!" (pretty_term t)
+  | `Bottom -> "⊥"
+  | `Int i -> string_of_int i
+  | `Bool true -> "#t"
+  | `Bool false -> "#f"
+  | `Succ -> "succ"
+
+  let pretty v =
+    match v with
+    | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t)
+    | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t)
+    | `Thunk t -> sprintf "{%s}" (pretty_term t)
+    | `Int i -> string_of_int i
+    | `Bool true -> "#t"
+    | `Bool false -> "#f"
+
+end
+
+let compile s = s |> parse |> church |> reduce predef ~k:(fun x -> x)

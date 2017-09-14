@@ -1,4 +1,6 @@
 # Lambdasylum
+[![Build Status](https://travis-ci.org/rootmos/lambdasylum.svg?branch=master)](https://travis-ci.org/rootmos/lambdasylum)
+
 The lambda asylum is a place to try out different kinds of lambda calculi.
 Currently the following calculi are implemented:
 * [untyped lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus) (in [`ulambda`](../master/ulambda.ml))
@@ -6,12 +8,24 @@ Currently the following calculi are implemented:
 * [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))
 * [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))
 
+## Usage
+Simplest way to try it out is by using Docker:
+```
+docker run -it rootmos/lambdasylum
+```
+
 ## Examples for `ulambda`
+`0` ⟶ `0`
+
 `1` ⟶ `1`
 
 `(λx.x) 1` ⟶ `1`
 
 `(\lambda x.x) 1` ⟶ `1`
+
+`#t` ⟶ `true`
+
+`#f` ⟶ `false`
 
 `1+2` ⟶ `3`
 
@@ -50,6 +64,14 @@ Currently the following calculi are implemented:
 `if #t 1 2` ⟶ `1`
 
 `if #f 1 2` ⟶ `2`
+
+`and #t #t` ⟶ `true`
+
+`and #f #t` ⟶ `false`
+
+`and #t #f` ⟶ `false`
+
+`and #f #f` ⟶ `false`
 
 `if (and #t #t) 1 2` ⟶ `1`
 

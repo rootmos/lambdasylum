@@ -1,21 +1,18 @@
 open Core_kernel.Std
 open Printf
 
-let c s = s
-  |> Ulambda.parse
-  |> Ulambda.church
-  |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)
-
-let p ul = ul |> Ulambda.pretty |> print_endline
-
 module T = Test_suite.Make2(struct
   let name = "ulambda"
   include Test_suite.Stdout(struct let name = name end)
-  let compile = c
+  let compile = Ulambda.compile
   let cases = [
+    "0", `Int 0;
     "1", `Int 1;
     "(λx.x) 1", `Int 1;
     "(\\lambda x.x) 1", `Int 1;
+
+    "#t", `Bool true;
+    "#f", `Bool false;
 
     "1+2", `Int 3;
     "2+1", `Int 3;
@@ -41,6 +38,11 @@ module T = Test_suite.Make2(struct
 
     "if #t 1 2", `Int 1;
     "if #f 1 2", `Int 2;
+
+    "and #t #t", `Bool true;
+    "and #f #t", `Bool false;
+    "and #t #f", `Bool false;
+    "and #f #f", `Bool false;
 
     "if (and #t #t) 1 2", `Int 1;
     "if (and #f #t) 1 2", `Int 2;
