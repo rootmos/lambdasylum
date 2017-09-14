@@ -211,23 +211,30 @@ module Church = struct
       |> ok_exn
 
   let rec pretty_term = function
-  | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t)
-  | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t)
-  | `App (t1, t2) -> sprintf "(%s) (%s)" (pretty_term t1) (pretty_term t2)
-  | `Ident n -> n
-  | `Thunk t -> sprintf "{%s}" (pretty_term t)
-  | `Force t -> sprintf "%s!" (pretty_term t)
-  | `Bottom -> "⊥"
-  | `Int i -> string_of_int i
-  | `Bool true -> "#t"
-  | `Bool false -> "#f"
-  | `Succ -> "succ"
+  | `Ident n -> n, 0
+  | `Bottom -> "⊥", 0
+  | `Int i -> string_of_int i, 0
+  | `Bool true -> "#t", 0
+  | `Bool false -> "#f", 0
+  | `Succ -> "succ", 0
+  | `Thunk t -> let p, _ = pretty_term t in sprintf "{%s}" p, 0
+  | `Force t -> let p, size = pretty_term t in sprintf "%s!" p, succ size
+  | `Lambda (`Wildcard, t) ->
+      let p, size = pretty_term t in sprintf "λ_.%s" p, succ size
+  | `Lambda (`Ident n, t) ->
+      let p, size = pretty_term t in sprintf "λ%s.%s" n p, succ size
+  | `App (t1, t2) ->
+      let p1, s1 = pretty_term t1
+      and p2, s2 = pretty_term t2 in
+      let parenthesize p = function 0 -> p | _ -> sprintf "(%s)" p in
+      sprintf "%s %s" (parenthesize p1 s1) (parenthesize p2 s2),
+        s1 + s2 + 1
 
   let pretty v =
     match v with
-    | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t)
-    | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t)
-    | `Thunk t -> sprintf "{%s}" (pretty_term t)
+    | `Lambda (`Wildcard, t) -> sprintf "λ_.%s" (pretty_term t |> fst)
+    | `Lambda (`Ident n, t) -> sprintf "λ%s.%s" n (pretty_term t |> fst)
+    | `Thunk t -> sprintf "{%s}" (pretty_term t |> fst)
     | `Int i -> string_of_int i
     | `Bool true -> "#t"
     | `Bool false -> "#f"
