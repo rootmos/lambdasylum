@@ -8,7 +8,7 @@ Currently the following calculi are implemented:
 * [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))
 * [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))
 
-##Usage
+## Usage
 Simplest way to try it out is by using Docker:
 ```
 docker run -it rootmos/lambdasylum

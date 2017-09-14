@@ -20,7 +20,7 @@ let () = Out_channel.with_file (Sys.getenv "README") ~f:(fun out ->
   o "* [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))";
   nl ();
 
-  o "##Usage";
+  o "## Usage";
   o "Simplest way to try it out is by using Docker:";
   o "```";
   o "docker run -it rootmos/lambdasylum";
