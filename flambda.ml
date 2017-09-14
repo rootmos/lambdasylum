@@ -106,3 +106,10 @@ let rec erase = function
 | `Thunk t -> `Thunk (erase t)
 | `Force t -> `Force (erase t)
 | `Int _ | `Bool _ | `Bottom | `Ident _ as t -> t
+
+let compile s =
+  let fl = parse s in
+  let _ = typecheck predef fl in
+  erase fl
+  |> Ulambda.church
+  |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)

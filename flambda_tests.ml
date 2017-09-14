@@ -4,18 +4,10 @@ let p s = s |> Sexp.to_string_hum |> print_endline
 let pretty_term t = Flambda_parsetree.sexp_of_term t |> p
 let pretty_ty t = Flambda_parsetree.sexp_of_ty t |> p
 
-let c s =
-  let fl = Flambda.parse s in
-  let _ = Flambda.typecheck Flambda.predef fl in
-
-  Flambda.erase fl
-  |> Ulambda.church
-  |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)
-
 module T = Test_suite.Make2(struct
   let name = "flambda"
   include Test_suite.Stdout(struct let name = name end)
-  let compile = c
+  let compile = Flambda.compile
   let cases = [
     "(λx:int.x) 0", `Int 0;
     "(ΛT.λx:T.x) [int] 0", `Int 0;

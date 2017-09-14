@@ -50,3 +50,10 @@ let rec erase = function
 | `Force t -> `Force (erase t)
 | `Lambda (p, _, t) -> `Lambda (p, erase t)
 | `App (t0, t1) -> `App (erase t0, erase t1)
+
+let compile s =
+  let tl = parse s in
+  let _ = typecheck TyCtx.empty tl in
+  erase tl
+  |> Ulambda.church
+  |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)

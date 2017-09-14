@@ -5,17 +5,10 @@ let p s = s |> Sexp.to_string_hum |> print_endline
 let pretty_term t = Tlambda_parsetree.sexp_of_term t |> p
 let pretty_ty t = Tlambda_parsetree.sexp_of_ty t |> p
 
-let c s =
-  let tl = Tlambda.parse s in
-  let _ = Tlambda.typecheck Tlambda.TyCtx.empty tl in
-  Tlambda.erase tl
-  |> Ulambda.church
-  |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)
-
 module T = Test_suite.Make2(struct
   let name = "tlambda"
   include Test_suite.Stdout(struct let name = name end)
-  let compile = c
+  let compile = Tlambda.compile
   let cases = [
     "(λx:int.x) 0", `Int 0;
     "(λf:(int->int).f 1) (λx:int.x)", `Int 1;
