@@ -112,4 +112,4 @@ let compile s =
   let _ = typecheck predef fl in
   erase fl
   |> Ulambda.church
-  |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)
+  |> Clambda.reduce Ulambda.church_predef ~k:(fun x -> x)

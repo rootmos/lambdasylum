@@ -14,6 +14,22 @@ Simplest way to try it out is by using Docker:
 docker run -it rootmos/lambdasylum
 ```
 
+## Examples for `clambda`
+`(λx.x)` ⟶ `λy.y`
+
+`(λx.x) (λy.y y)` ⟶ `λz.z z`
+
+`(λx.λy.x) (λa.a) (λb.b b)` ⟶ `λa.a`
+
+`(λx.λy.y) (λa.a) (λb.b b)` ⟶ `λb.b b`
+
+`((λx.{x}) (λa.a))!` ⟶ `λa.a`
+
+`((λx.(λx.{x}) (λa.a)) (λb.b b))!` ⟶ `λa.a`
+
+`((λx.(λy.{x}) (λa.a)) (λb.b b))!` ⟶ `λb.b b`
+
+
 ## Examples for `ulambda`
 `0` ⟶ `0`
 

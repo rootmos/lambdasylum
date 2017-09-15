@@ -1,6 +1,7 @@
 open Core_kernel.Std
 
 let () = Errors.run_with_pretty_errors ~err:(fun _ -> exit 1) (fun () ->
+  Clambda_tests.run ();
   Ulambda_tests.run ();
   Tlambda_tests.run ();
   Flambda_tests.run ()
@@ -28,6 +29,7 @@ let () = Out_channel.with_file (Sys.getenv "README") ~f:(fun out ->
   o "```";
   nl ();
 
+  Clambda_tests.markdown out;
   Ulambda_tests.markdown out;
   Tlambda_tests.markdown out;
   Flambda_tests.markdown out;

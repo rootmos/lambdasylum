@@ -7,13 +7,17 @@
 
 (ocamllex (lexer))
 
+;; Clambda
+(menhir
+ ((flags (--external-tokens Tokens))
+  (merge_into clambda_parser)
+  (modules (clambda_parser tokens))))
 
 ;; Ulambda
 (menhir
  ((flags (--external-tokens Tokens))
   (merge_into ulambda_parser)
   (modules (ulambda_parser tokens))))
-
 
 ;; Tlambda
 (menhir

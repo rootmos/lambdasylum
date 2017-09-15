@@ -5,7 +5,7 @@ open In_channel
 
 type calculus = {
   name: string;
-  compile: string -> Ulambda.value
+  compile: string -> Clambda.value
 }
 
 let help () =
@@ -14,10 +14,12 @@ let help () =
   printf "\\forall (or \\f<TAB>) expands to ∀\n";
   printf "\\bottom (or \\b<TAB>) expands to ⊥\n";
   newline stdout;
-  printf ":ulambda  switch to untyped lambda calculus\n";
-  printf ":tlambda  switch to simply typed lambda calculs\n";
+  printf ":clambda  switch to core lambda calculus\n";
+  printf ":ulambda  switch to untyped lambda calculus with Church encodings\n";
+  printf ":tlambda  switch to simply typed lambda calculus\n";
   printf ":flambda  switch to System F\n"
 
+let clambda = { name = "clambda"; compile = Clambda.compile }
 let ulambda = { name = "ulambda"; compile = Ulambda.compile }
 let tlambda = { name = "tlambda"; compile = Tlambda.compile }
 let flambda = { name = "flambda"; compile = Flambda.compile }
@@ -29,13 +31,14 @@ let rec repl c () =
   Errors.run_with_pretty_errors ~err (fun () ->
     match input_line stdin with
     | Some l when String.is_prefix l ":h" -> help (); repl c ()
+    | Some l when String.is_prefix l ":c" -> repl clambda ()
     | Some l when String.is_prefix l ":u" -> repl ulambda ()
     | Some l when String.is_prefix l ":t" -> repl tlambda ()
     | Some l when String.is_prefix l ":f" -> repl flambda ()
     | Some l ->
         c.compile l
-          |> Ulambda.Church.unchurch
-          |> Ulambda.Church.pretty
+          |> Ulambda.unchurch
+          |> Ulambda.pretty
           |> print_endline;
         flush stdout;
         repl c ()

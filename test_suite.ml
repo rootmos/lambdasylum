@@ -1,6 +1,13 @@
 open Core_kernel.Std
 
-type expect = [`Int of int | `Bool of bool | `Bottom | `TypeError | `Thunk]
+type expect = [
+  `Int of int
+| `Bool of bool
+| `Bottom
+| `TypeError
+| `Thunk
+| `AlphaEqv of string
+]
 
 module type Output_t = sig
   val before_suite: unit -> unit
@@ -34,6 +41,8 @@ module Make(T: sig
   val bool_of_v: t -> bool
   val is_thunk: t -> bool
   val cases: (string * expect) list
+
+  val alpha_equivalent: t -> Clambda.value -> bool
 end) = struct
   include T
   let run (module O: Output_t) () =
@@ -67,12 +76,16 @@ end) = struct
           eprintf "did not reach bottom\n";
           assert (false);
         end with
-        | Ulambda.Ulambda_exception Ulambda.ReachedBottom ->
+        | Clambda.Clambda_exception Clambda.ReachedBottom ->
             O.test_case_result s "reached bottom"
         end
     | `Thunk ->
         assert (compile s |> is_thunk);
         O.test_case_result s "{..}"
+    | `AlphaEqv s' ->
+        let v = Clambda.parse_value s' in
+        assert (alpha_equivalent (compile s) v);
+        O.test_case_result s s'
   );
   O.after_suite ()
 
@@ -86,14 +99,15 @@ end
 
 module Make2(T: sig
   val name: string
-  val compile: string -> Ulambda.value
+  val compile: string -> Clambda.value
   val cases: (string * expect) list
 end) = Make(struct
   include T
-  type t = Ulambda.value
-  let int_of_v v = Ulambda.Church.(unchurch_int v |> ok_exn)
-  let bool_of_v v = Ulambda.Church.(unchurch_bool v |> ok_exn)
+  type t = Clambda.value
+  let int_of_v v = Ulambda.(unchurch_int v |> ok_exn)
+  let bool_of_v v = Ulambda.(unchurch_bool v |> ok_exn)
   let is_thunk = function
     | `Thunk _ -> true
     | _ -> false
+  let alpha_equivalent = Clambda.alpha_equivalent
 end)
