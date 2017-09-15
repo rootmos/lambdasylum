@@ -41,16 +41,22 @@ let church_predef: Clambda.Ctx.t = {
       "and", "λp.λq.(p q) p";
       "or", "λp.λq.(p p) q";
 
-      "+", "λm.λn.λf.λx.((m f) ((n f) x))";
+      "+", "λm.λn.λf.λx.(m f) ((n f) x)";
       "*", "λm.λn.λf.λx.(m (n f)) x";
       "-", "λm.λn.(n pred) m";
       "zero?", "λn.n (λ_.λx.λy.y) (λx.λy.x)";
       "succ", "λn.λf.λx.f ((n f) x)";
-      "pred", "λn.λf.λx.n (λg.λh.(h (g f))) (λ_.x) (λu.u)";
+      "pred", "λn.λf.λx.n (λg.λh.h (g f)) (λ_.x) (λu.u)";
       "leq?", "λm.λn.zero? (- m n)";
       "eq?", "λm.λn.and (leq? m n) (leq? n m)";
 
-      "fix", "λf.λx.f {fix f} x"
+      "fix", "λf.λx.f {fix f} x";
+
+      "nil", "λ_.λn.n";
+      "nil?", "λl.l (λh.λt.(λx.λy.y)) (λx.λy.x)";
+      "cons", "λh.λt.λc.λn.c h (t c n)";
+      "head", "λl.l (λh.λt.h) (λx.λy.y)";
+      "tail", "λl.λc.λn.l (λh.λt.λg.g h (t c)) (λ_.n) (λh.λt.t)"
     ] >>| fun (i, s) -> i, Clambda.parse_value s
   }
 

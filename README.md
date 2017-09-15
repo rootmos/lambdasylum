@@ -161,6 +161,18 @@ docker run -it rootmos/lambdasylum
 
 `(fix (λk.λn.(if (leq? n 1) 1 {(k (n-1))+(k (n-2))})!)) 7` ⟶ `21`
 
+`nil? nil` ⟶ `true`
+
+`nil? (cons 0 nil)` ⟶ `false`
+
+`head nil` ⟶ `false`
+
+`head (cons 0 nil)` ⟶ `0`
+
+`nil? (tail (cons 0 nil))` ⟶ `true`
+
+`head (tail (cons 0 (cons 1 nil)))` ⟶ `1`
+
 
 ## Examples for `tlambda`
 `(λx:int.x) 0` ⟶ `0`
