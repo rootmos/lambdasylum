@@ -13,6 +13,8 @@ module T = Test_suite.Make2(struct
 
     "#t", `Bool true;
     "#f", `Bool false;
+    "#t", `AlphaEqv "λx.λy.x";
+    "#t", `AlphaEqv "λx.λy.y";
 
     "1+2", `Int 3;
     "2+1", `Int 3;
@@ -25,7 +27,12 @@ module T = Test_suite.Make2(struct
     "0-1", `Int 0;
     "2-2", `Int 0;
 
+    "0*4", `Int 0;
     "3*4", `Int 12;
+
+    "0", `AlphaEqv "λf.λx.x";
+    "1", `AlphaEqv "λf.λx.f x";
+    "2", `AlphaEqv "λf.λx.f (f x)";
 
     "succ 0", `Int 1;
     "succ 1", `Int 2;
@@ -92,10 +99,12 @@ module T = Test_suite.Make2(struct
 
     "nil? nil", `Bool true;
     "nil? (cons 0 nil)", `Bool false;
-    "head nil", `Bool false;
+    "head nil", `Bottom;
     "head (cons 0 nil)", `Int 0;
     "nil? (tail (cons 0 nil))", `Bool true;
     "head (tail (cons 0 (cons 1 nil)))", `Int 1;
+    "nil", `AlphaEqv "λx.λy.y";
+    "nil? (tail nil)", `Bool true;
   ]
 end)
 

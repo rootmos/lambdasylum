@@ -15,19 +15,23 @@ docker run -it rootmos/lambdasylum
 ```
 
 ## Examples for `clambda`
-`(λx.x)` ⟶ `λy.y`
+`(λx.x)` ⟶ `λy.y (α-equiv)`
 
-`(λx.x) (λy.y y)` ⟶ `λz.z z`
+`(λx.x) (λy.y y)` ⟶ `λz.z z (α-equiv)`
 
-`(λx.λy.x) (λa.a) (λb.b b)` ⟶ `λa.a`
+`(λx.λ_.x)` ⟶ `λa.λb.a (α-equiv)`
 
-`(λx.λy.y) (λa.a) (λb.b b)` ⟶ `λb.b b`
+`(λ_.λy.y)` ⟶ `λa.λb.b (α-equiv)`
 
-`((λx.{x}) (λa.a))!` ⟶ `λa.a`
+`(λx.λy.x) (λa.a) (λb.b b)` ⟶ `λa.a (α-equiv)`
 
-`((λx.(λx.{x}) (λa.a)) (λb.b b))!` ⟶ `λa.a`
+`(λx.λy.y) (λa.a) (λb.b b)` ⟶ `λb.b b (α-equiv)`
 
-`((λx.(λy.{x}) (λa.a)) (λb.b b))!` ⟶ `λb.b b`
+`((λx.{x}) (λa.a))!` ⟶ `λa.a (α-equiv)`
+
+`((λx.(λx.{x}) (λa.a)) (λb.b b))!` ⟶ `λa.a (α-equiv)`
+
+`((λx.(λy.{x}) (λa.a)) (λb.b b))!` ⟶ `λb.b b (α-equiv)`
 
 
 ## Examples for `ulambda`
@@ -42,6 +46,10 @@ docker run -it rootmos/lambdasylum
 `#t` ⟶ `true`
 
 `#f` ⟶ `false`
+
+`#t` ⟶ `λx.λy.x (α-equiv)`
+
+`#t` ⟶ `λx.λy.y (α-equiv)`
 
 `1+2` ⟶ `3`
 
@@ -61,7 +69,15 @@ docker run -it rootmos/lambdasylum
 
 `2-2` ⟶ `0`
 
+`0*4` ⟶ `0`
+
 `3*4` ⟶ `12`
+
+`0` ⟶ `λf.λx.x (α-equiv)`
+
+`1` ⟶ `λf.λx.f x (α-equiv)`
+
+`2` ⟶ `λf.λx.f (f x) (α-equiv)`
 
 `succ 0` ⟶ `1`
 
@@ -165,13 +181,17 @@ docker run -it rootmos/lambdasylum
 
 `nil? (cons 0 nil)` ⟶ `false`
 
-`head nil` ⟶ `false`
+`head nil` ⟶ `reached bottom`
 
 `head (cons 0 nil)` ⟶ `0`
 
 `nil? (tail (cons 0 nil))` ⟶ `true`
 
 `head (tail (cons 0 (cons 1 nil)))` ⟶ `1`
+
+`nil` ⟶ `λx.λy.y (α-equiv)`
+
+`nil? (tail nil)` ⟶ `true`
 
 
 ## Examples for `tlambda`
@@ -240,5 +260,25 @@ docker run -it rootmos/lambdasylum
 `(if [{int}] #t {0} {⊥})!` ⟶ `0`
 
 `(if [{int}] #f {⊥} {1})!` ⟶ `1`
+
+`nil? [int] (nil [int])` ⟶ `true`
+
+`nil? [bool] (nil [bool])` ⟶ `true`
+
+`nil? [bool] (nil [int])` ⟶ `type error`
+
+`nil? [int] (cons [int] 0 (nil [int]))` ⟶ `false`
+
+`nil? [bool] (cons [bool] #t (nil [bool]))` ⟶ `false`
+
+`head [int] (nil [int])` ⟶ `reached bottom`
+
+`head [int] (cons [int] 0 (nil [int]))` ⟶ `0`
+
+`head [bool] (cons [bool] #f (nil [bool]))` ⟶ `false`
+
+`nil? [int] (tail [int] (cons [int] 0 (nil [int])))` ⟶ `true`
+
+`head [int] (tail [int] (cons [int] 0 (cons [int] 1 (nil [int]))))` ⟶ `1`
 
 

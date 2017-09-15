@@ -36,7 +36,12 @@ end)
 let predef = TyCtx.(
   {
     bindings = [
-      "if", parse_type "∀T.bool->T->T->T"
+      "if", parse_type "∀T.bool->T->T->T";
+      "nil", parse_type "∀T.∀Z.(T->Z->Z)->Z->Z";
+      "nil?", parse_type "∀T.(∀Z.(T->Z->Z)->Z->Z)->bool";
+      "cons", parse_type "∀T.T->(∀Z.(T->Z->Z)->Z->Z)->(∀Z.(T->Z->Z)->Z->Z)";
+      "head", parse_type "∀T.(∀Z.(T->Z->Z)->Z->Z)->T";
+      "tail", parse_type "∀T.(∀Z.(T->Z->Z)->Z->Z)->(∀Z.(T->Z->Z)->Z->Z)";
     ]
   }
 )

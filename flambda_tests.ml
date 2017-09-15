@@ -18,6 +18,17 @@ module T = Test_suite.Make2(struct
     "if [int] #f 0 1", `Int 1;
     "(if [{int}] #t {0} {⊥})!", `Int 0;
     "(if [{int}] #f {⊥} {1})!", `Int 1;
+
+    "nil? [int] (nil [int])", `Bool true;
+    "nil? [bool] (nil [bool])", `Bool true;
+    "nil? [bool] (nil [int])", `TypeError;
+    "nil? [int] (cons [int] 0 (nil [int]))", `Bool false;
+    "nil? [bool] (cons [bool] #t (nil [bool]))", `Bool false;
+    "head [int] (nil [int])", `Bottom;
+    "head [int] (cons [int] 0 (nil [int]))", `Int 0;
+    "head [bool] (cons [bool] #f (nil [bool]))", `Bool false;
+    "nil? [int] (tail [int] (cons [int] 0 (nil [int])))", `Bool true;
+    "head [int] (tail [int] (cons [int] 0 (cons [int] 1 (nil [int]))))", `Int 1;
   ]
 end)
 

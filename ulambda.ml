@@ -55,7 +55,7 @@ let church_predef: Clambda.Ctx.t = {
       "nil", "λ_.λn.n";
       "nil?", "λl.l (λh.λt.(λx.λy.y)) (λx.λy.x)";
       "cons", "λh.λt.λc.λn.c h (t c n)";
-      "head", "λl.l (λh.λt.h) (λx.λy.y)";
+      "head", "λl.(l (λh.λt.h) {⊥})!";
       "tail", "λl.λc.λn.l (λh.λt.λg.g h (t c)) (λ_.n) (λh.λt.t)"
     ] >>| fun (i, s) -> i, Clambda.parse_value s
   }

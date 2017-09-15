@@ -85,7 +85,7 @@ end) = struct
     | `AlphaEqv s' ->
         let v = Clambda.parse_value s' in
         assert (alpha_equivalent (compile s) v);
-        O.test_case_result s s'
+        O.test_case_result s (s' ^ " (α-equiv)")
   );
   O.after_suite ()
 

@@ -8,6 +8,8 @@ module T = Test_suite.Make2(struct
   let cases = [
     "(λx.x)", `AlphaEqv "λy.y";
     "(λx.x) (λy.y y)", `AlphaEqv "λz.z z";
+    "(λx.λ_.x)", `AlphaEqv "λa.λb.a";
+    "(λ_.λy.y)", `AlphaEqv "λa.λb.b";
     "(λx.λy.x) (λa.a) (λb.b b)", `AlphaEqv "λa.a";
     "(λx.λy.y) (λa.a) (λb.b b)", `AlphaEqv "λb.b b";
     "((λx.{x}) (λa.a))!", `AlphaEqv "λa.a";
