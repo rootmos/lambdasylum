@@ -1,4 +1,5 @@
 %start <Tlambda_parsetree.term> program
+%start <Tlambda_parsetree.ty> ty_eof
 
 %%
 
@@ -41,6 +42,10 @@ operator:
 pattern:
   | WILDCARD { `Wildcard }
   | i = IDENTIFIER { `Ident i }
+  ;
+
+ty_eof:
+  | ty = ty; EOF { ty }
   ;
 
 ty:

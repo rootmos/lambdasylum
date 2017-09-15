@@ -19,6 +19,21 @@ module T = Test_suite.Make2(struct
     "(λx:bool.x) 0", `TypeError;
     "0!", `TypeError;
     "{0}!", `Int 0;
+
+    "and #t #f", `Bool false;
+    "or #t #f", `Bool true;
+    "1+2", `Int 3;
+    "2-1", `Int 1;
+    "2*3", `Int 6;
+    "zero? 0", `Bool true;
+    "zero? 1", `Bool false;
+    "eq? 1 7", `Bool false;
+    "eq? 7 7", `Bool true;
+    "leq? 1 7", `Bool true;
+    "leq? 7 7", `Bool true;
+    "leq? 8 7", `Bool false;
+    "succ 2", `Int 3;
+    "pred 2", `Int 1;
   ]
 end)
 

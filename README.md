@@ -165,6 +165,34 @@ docker run -it rootmos/lambdasylum
 
 `{0}!` ⟶ `0`
 
+`and #t #f` ⟶ `false`
+
+`or #t #f` ⟶ `true`
+
+`1+2` ⟶ `3`
+
+`2-1` ⟶ `1`
+
+`2*3` ⟶ `6`
+
+`zero? 0` ⟶ `true`
+
+`zero? 1` ⟶ `false`
+
+`eq? 1 7` ⟶ `false`
+
+`eq? 7 7` ⟶ `true`
+
+`leq? 1 7` ⟶ `true`
+
+`leq? 7 7` ⟶ `true`
+
+`leq? 8 7` ⟶ `false`
+
+`succ 2` ⟶ `3`
+
+`pred 2` ⟶ `1`
+
 
 ## Examples for `flambda`
 `(λx:int.x) 0` ⟶ `0`

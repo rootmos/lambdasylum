@@ -20,10 +20,29 @@ let parse s =
   | Tlambda_parser.Error -> raise @@ Tlambda_exception Parsing
   | Lexer.Syntax_error msg -> raise @@ Tlambda_exception (Lexing msg)
 
+let parse_type s = Lexing.from_string s |> Tlambda_parser.ty_eof Lexer.read
+
 module TyCtx = Bindings.Make(struct
   type t = ty
   let subsystem = "typechecking tlambda"
 end)
+
+let predef = TyCtx.(
+  {
+    bindings = [
+      "and", parse_type "bool->bool->bool";
+      "or", parse_type "bool->bool->bool";
+      "+", parse_type "int->int->int";
+      "-", parse_type "int->int->int";
+      "*", parse_type "int->int->int";
+      "zero?", parse_type "int->bool";
+      "eq?", parse_type "int->int->bool";
+      "leq?", parse_type "int->int->bool";
+      "succ", parse_type "int->int";
+      "pred", parse_type "int->int";
+    ]
+  }
+)
 
 let rec typecheck ~ctx = function
   `Int _ -> `Int
@@ -53,7 +72,7 @@ let rec erase = function
 
 let compile s =
   let tl = parse s in
-  let _ = typecheck TyCtx.empty tl in
+  let _ = typecheck predef tl in
   erase tl
   |> Ulambda.church
   |> Ulambda.reduce Ulambda.predef ~k:(fun x -> x)
