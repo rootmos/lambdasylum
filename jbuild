@@ -25,6 +25,12 @@
   (merge_into tlambda_parser)
   (modules (tlambda_parser tokens))))
 
+;; Tilambda
+(menhir
+ ((flags (--external-tokens Tokens))
+  (merge_into tilambda_parser)
+  (modules (tilambda_parser tokens))))
+
 ;; Flambda
 (menhir
  ((flags (--external-tokens Tokens))

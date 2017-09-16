@@ -4,7 +4,8 @@ let () = Errors.run_with_pretty_errors ~err:(fun _ -> exit 1) (fun () ->
   Clambda_tests.run ();
   Ulambda_tests.run ();
   Tlambda_tests.run ();
-  Flambda_tests.run ()
+  Flambda_tests.run ();
+  Tilambda_tests.run ()
 )
 
 let () = Out_channel.with_file (Sys.getenv "README") ~f:(fun out ->

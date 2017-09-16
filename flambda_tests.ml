@@ -13,7 +13,7 @@ module T = Test_suite.Make2(struct
     "(ΛT.λx:T.x) [int] 0", `Int 0;
     "(ΛT.λx:T.x) [bool] 0", `TypeError;
     "(λf:∀T.T->T.f [int] 0) (ΛA.λa:A.a)", `Int 0;
-    "(λf:∀T.∀T.T->T.f [bool] [int] 0) (ΛB.ΛA.λa:A.a)", `Int 0;
+    "(λf:∀T.∀T.T->T.f [bool] [int] 0) (ΛA.ΛA.λa:A.a)", `Int 0;
     "if [int] #t 0 1", `Int 0;
     "if [int] #f 0 1", `Int 1;
     "(if [{int}] #t {0} {⊥})!", `Int 0;

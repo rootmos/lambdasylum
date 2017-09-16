@@ -67,7 +67,8 @@ end) = struct
         | Tlambda.Tlambda_exception (Tlambda.IllTypedApplication _)
         | Flambda.Flambda_exception (Flambda.ForcingNonThunk _)
         | Flambda.Flambda_exception (Flambda.IllTypedApplication _)
-        | Flambda.Flambda_exception (Flambda.IllTypedTypeApplication) ->
+        | Flambda.Flambda_exception (Flambda.IllTypedTypeApplication)
+        | Tilambda.Tilambda_exception Tilambda.Unification_failed ->
             O.test_case_result s "type error"
         end
     | `Bottom ->

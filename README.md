@@ -251,7 +251,7 @@ docker run -it rootmos/lambdasylum
 
 `(λf:∀T.T->T.f [int] 0) (ΛA.λa:A.a)` ⟶ `0`
 
-`(λf:∀T.∀T.T->T.f [bool] [int] 0) (ΛB.ΛA.λa:A.a)` ⟶ `0`
+`(λf:∀T.∀T.T->T.f [bool] [int] 0) (ΛA.ΛA.λa:A.a)` ⟶ `0`
 
 `if [int] #t 0 1` ⟶ `0`
 
