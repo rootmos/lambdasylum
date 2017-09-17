@@ -28,7 +28,7 @@ module Markdown(T: sig
   val out: Out_channel.t
 end) = struct
   open T
-  let before_suite () = fprintf out "## Examples for `%s`\n" name
+  let before_suite () = fprintf out "### Examples for `%s`\n" name
   let after_suite () = fprintf out "\n"
   let test_case_result s v = fprintf out "`%s` ⟶ `%s`\n\n" s v
 end
