@@ -1,0 +1,9 @@
+digraph calculi {
+    nodesep=1.0;
+    ulambda -> clambda [label="Church encode"];
+    clambda -> ulambda [label="Church decode"];
+    tlambda -> ulambda [label="type erasure"];
+    flambda -> ulambda [label="type erasure"];
+    tilambda -> ulambda [label="type erasure"];
+    tlambda -> flambda [label="embedding", style=dotted];
+}

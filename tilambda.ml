@@ -194,12 +194,14 @@ let rec erase = function
 | `Lambda (p, _, t) -> `Lambda (p, erase t)
 | `App (t0, t1, _) -> `App (erase t0, erase t1)
 
-let compile s =
-  let tl = parse s in
-  let tl = introduce_tyvars tl in
-  let cs = derive_constraints tl in
-  let sub = unify cs in
-  let tl = sub_ty_in_term sub tl in
-  erase tl
-    |> Ulambda.church
-    |> Clambda.reduce Ulambda.church_predef ~k:(fun x -> x)
+let front_end s =  s
+  |> parse
+  |> introduce_tyvars
+  |> fun tl -> sub_ty_in_term (derive_constraints tl |> unify) tl
+
+let via_ulambda tl = tl
+  |> erase
+  |> Ulambda.church
+  |> Clambda.reduce Ulambda.church_predef ~k:(fun x -> x)
+
+let compile s = s |> front_end |> via_ulambda

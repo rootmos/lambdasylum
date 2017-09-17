@@ -3,10 +3,14 @@
 
 The lambda asylum is a place to try out different kinds of lambda calculi.
 Currently the following calculi are implemented:
-* [untyped lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus) (in [`ulambda`](../master/ulambda.ml))
+* a core calculus with thunks (in [`clambda`](./clambda.ml)
+* an [untyped lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus) (in [`ulambda`](../master/ulambda.ml))
   with [Church encoded](https://en.wikipedia.org/wiki/Church_encoding) natural numbers and booleans
-* [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))
-* [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))
+* a [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))
+* a [System F](https://en.wikipedia.org/wiki/System_F)-style calculs (in [`flambda`](../master/flambda.ml))
+* a [Hindley-Milner](https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system)-style type-inferred calculi (in [`tilambda`](./tilambda.ml)
+
+![calculi](./calculi.png)
 
 ## Usage
 Simplest way to try it out is by using Docker:

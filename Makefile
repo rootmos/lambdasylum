@@ -1,5 +1,5 @@
 .PHONY: all
-all: test repl-build
+all: test repl-build calculi.png
 
 .PHONY: test
 test:
@@ -17,3 +17,6 @@ repl-build:
 .PHONY: clean
 clean:
 	rm -rf _build
+
+calculi.png: calculi.dot
+	dot -Tpng $< > $@

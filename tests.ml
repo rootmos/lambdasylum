@@ -17,10 +17,15 @@ let () = Out_channel.with_file (Sys.getenv "README") ~f:(fun out ->
   nl ();
   o "The lambda asylum is a place to try out different kinds of lambda calculi.";
   o "Currently the following calculi are implemented:";
-  o "* [untyped lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus) (in [`ulambda`](../master/ulambda.ml))";
+  o "* a core calculus with thunks (in [`clambda`](./clambda.ml)";
+  o "* an [untyped lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus) (in [`ulambda`](../master/ulambda.ml))";
   o "  with [Church encoded](https://en.wikipedia.org/wiki/Church_encoding) natural numbers and booleans";
-  o "* [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))";
-  o "* [System F](https://en.wikipedia.org/wiki/System_F) (in [`flambda`](../master/flambda.ml))";
+  o "* a [simply type lambda calculus](https://en.wikipedia.org/wiki/Simply_typed_lambda_calculus) (in [`tlambda`](../master/tlambda.ml))";
+  o "* a [System F](https://en.wikipedia.org/wiki/System_F)-style calculs (in [`flambda`](../master/flambda.ml))";
+  o "* a [Hindley-Milner](https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system)-style type-inferred calculi (in [`tilambda`](./tilambda.ml)";
+  nl ();
+
+  o "![calculi](./calculi.png)";
   nl ();
 
   o "## Usage";
