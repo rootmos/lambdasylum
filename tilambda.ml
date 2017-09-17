@@ -122,32 +122,47 @@ let rec introduce_tyvars: Tilambda_parsetree.term -> term  = function
   | `Force t -> `Force (introduce_tyvars t, FreshTyVar.next ())
   | `Ident _ | `Int _ | `Bool _ | `Bottom as t -> t
 
+module Acc = struct
+  include Base.Monad.Make(struct
+    type 'a t = 'a * (mono * mono) list
+    let return a = a, []
+    let bind (a, cs) ~f = let (b, cs') = f a in (b, cs @ cs')
+    let map = `Define_using_bind
+  end)
+
+  let tell c = (), [c]
+end
+
 let derive_constraints t =
-  let rec go ~ctx cs = function
-    | `Int _ -> `Int, cs
-    | `Bool _ -> `Bool, cs
-    | `Bottom -> `Bottom, cs
-    | `Ident n -> TyCtx.lookup ctx n |> inst, cs
-    | `Thunk t ->
-        let ty, cs' = go ~ctx cs t in `Thunk ty, cs'
+  let open Acc in
+  let open Let_syntax in
+  let rec go ~ctx = function
+    | `Int _ -> return `Int
+    | `Bool _ -> return `Bool
+    | `Bottom -> return `Bottom
+    | `Ident n -> TyCtx.lookup ctx n |> inst |> return
+    | `Thunk t -> let%map ty = go ~ctx t in `Thunk ty
     | `Att (t, ty) ->
-        let ty', cs' = go ~ctx cs t in
-        ty, (ty, ty') :: cs'
+        let%bind ty' = go ~ctx t in
+        let%map () = tell (ty, ty') in
+        ty
     | `Force (t, ty) ->
-        let ty', cs' = go ~ctx cs t in
-        ty, (`Thunk ty, ty') :: cs'
+        let%bind ty' = go ~ctx t in
+        let%map () = tell (`Thunk ty, ty') in
+        ty
     | `Lambda (`Ident n, ty0, t) ->
         let ctx = TyCtx.bind ctx n (ty0 :> ty) in
-        let ty1, cs' = go ~ctx cs t in
-        `Fun (ty0, ty1), cs'
+        let%map ty1 = go ~ctx t in
+        `Fun (ty0, ty1)
     | `Lambda (`Wildcard, ty0, t) ->
-        let ty1, cs' = go ~ctx cs t in
-        `Fun (ty0, ty1), cs'
+        let%map ty1 = go ~ctx t in
+        `Fun (ty0, ty1)
     | `App (t0, t1, ty) ->
-        let ty0, cs' = go ~ctx cs t0 in
-        let ty1, cs'' = go ~ctx cs' t1 in
-        ty, (ty0, `Fun (ty1, ty)) :: cs''
-  in go ~ctx:predef [] t
+        let%bind ty0 = go ~ctx t0 in
+        let%bind ty1 = go ~ctx t1 in
+        let%map () = tell (ty0, `Fun (ty1, ty)) in
+        ty
+  in go ~ctx:predef t
 
 let rec occurs i = function
   | `TyVar j when i = j -> true
