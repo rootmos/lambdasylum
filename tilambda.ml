@@ -147,7 +147,7 @@ let derive_constraints t =
         let ty0, cs' = go ~ctx cs t0 in
         let ty1, cs'' = go ~ctx cs' t1 in
         ty, (ty0, `Fun (ty1, ty)) :: cs''
-  in go ~ctx:predef [] t |> snd
+  in go ~ctx:predef [] t
 
 let rec occurs i = function
   | `TyVar j when i = j -> true
@@ -194,14 +194,39 @@ let rec erase = function
 | `Lambda (p, _, t) -> `Lambda (p, erase t)
 | `App (t0, t1, _) -> `App (erase t0, erase t1)
 
-let front_end s =  s
+let pretty_type ty =
+  let parenthesize s = function 0 -> s | _ -> sprintf "(%s)" s in
+  let rec go = function
+  | `Int -> "int", 0
+  | `Bool -> "bool", 0
+  | `Fun (t0, t1) ->
+      let s0, p0 = go t0 and s1, p1 = go t1 in
+      sprintf "%s->%s" (parenthesize s0 p0) s1, p0 + p1 + 1
+  | `Thunk t -> sprintf "{%s}" (go t |> fst), 0
+  | `Bottom -> "⊥", 0
+  | `TyVar n -> n, 0
+  | `TyFun (n, args) ->
+      List.( args
+        >>| (fun s -> let s, p = go s in parenthesize s p)
+        |> cons n
+        |> intersperse ~sep:" "
+        |> String.concat, length args
+      )
+  in go ty |> fst
+
+let front_end s = s
   |> parse
   |> introduce_tyvars
-  |> fun tl -> sub_ty_in_term (derive_constraints tl |> unify) tl
+  |> fun tl ->
+      let ty, cs = derive_constraints tl in
+      let sub = unify cs in
+      sub ty, sub_ty_in_term sub tl
 
 let via_ulambda tl = tl
   |> erase
   |> Ulambda.church
   |> Clambda.reduce Ulambda.church_predef ~k:(fun x -> x)
 
-let compile s = s |> front_end |> via_ulambda
+let type_of s = s |> front_end |> fst |> pretty_type
+
+let compile s = s |> front_end |> snd |> via_ulambda
