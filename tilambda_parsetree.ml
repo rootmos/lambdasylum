@@ -5,6 +5,7 @@ type mono = [
 | `Thunk of mono
 | `Bottom
 | `TyVar of string
+| `TyFun of string * mono list
 ]
 
 type ty = [

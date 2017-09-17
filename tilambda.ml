@@ -8,6 +8,7 @@ type mono = [
 | `Thunk of mono
 | `Bottom
 | `TyVar of string
+| `TyFun of string * mono list
 ]
 
 type ty = [
@@ -77,12 +78,11 @@ let predef = TyCtx.(
       "pred", parse_type "int->int";
 
       "if", parse_type "∀T.bool->T->T->T";
-      (* TODO: add proper type functions, this is just a hack *)
-      "nil", parse_type "∀T.(T->Z->Z)->Z->Z";
-      "nil?", parse_type "∀T.((T->Z->Z)->Z->Z)->bool";
-      "cons", parse_type "∀T.T->((T->Z->Z)->Z->Z)->((T->Z->Z)->Z->Z)";
-      "head", parse_type "∀T.((T->Z->Z)->Z->Z)->T";
-      "tail", parse_type "∀T.((T->Z->Z)->Z->Z)->((T->Z->Z)->Z->Z)";
+      "nil", parse_type "∀T.List T";
+      "nil?", parse_type "∀T.(List T)->bool";
+      "cons", parse_type "∀T.T->(List T)->(List T)";
+      "head", parse_type "∀T.(List T)->T";
+      "tail", parse_type "∀T.(List T)->List T";
     ]
   }
 )
@@ -91,6 +91,7 @@ let rec sub_ty i t: mono -> mono = function
   | `TyVar j when i = j -> t
   | `Thunk ty -> `Thunk (sub_ty i t ty)
   | `Fun (ty0, ty1) -> `Fun (sub_ty i t ty0, sub_ty i t ty1)
+  | `TyFun (f, args) -> `TyFun (f, List.(args >>| sub_ty i t))
   | s -> s
 
 let rec sub_ty' i (t: mono): ty -> ty = function
@@ -98,13 +99,15 @@ let rec sub_ty' i (t: mono): ty -> ty = function
   | `TyVar j when i = j -> (t :> ty)
   | `Thunk ty -> `Thunk (sub_ty i t ty)
   | `Fun (ty0, ty1) -> `Fun (sub_ty i t ty0, sub_ty i t ty1)
+  | `TyFun (f, args) -> `TyFun (f, List.(args >>| sub_ty i t))
   | s -> s
 
 let rec inst: ty -> mono = function
   | `Forall (i, ty) ->
       let tv = FreshTyVar.next () in
       inst (sub_ty' i tv ty)
-  | `Int | `Bool | `Fun _ | `Thunk _ | `Bottom | `TyVar _ as ty -> ty
+  | `Int | `Bool | `Fun _ | `Thunk _ | `Bottom | `TyVar _
+  | `TyFun _ as ty -> ty
 
 let rec introduce_tyvars: Tilambda_parsetree.term -> term  = function
   | `Lambda (p, None, t) ->
@@ -150,6 +153,7 @@ let rec occurs i = function
   | `TyVar j when i = j -> true
   | `Thunk ty -> occurs i ty
   | `Fun (ty0, ty1) -> occurs i ty0 || occurs i ty1
+  | `TyFun (_, args) -> List.exists ~f:(occurs i) args
   | _ -> false
 
 let rec unify = function
@@ -163,6 +167,11 @@ let rec unify = function
       Fn.compose (unify cs') (sub_ty j s)
   | (`Fun (s0, s1), `Fun (t0, t1)) :: cs ->
       unify @@ (s0, t0) :: (s1, t1) :: cs
+  | (`TyFun (f, fa), `TyFun (g, ga)) :: cs when f = g ->
+      begin match List.zip fa ga with
+      | Some cs' -> unify (List.append cs' cs)
+      | None -> raise @@ Tilambda_exception Unification_failed
+      end
   | (`Bottom, _) :: cs -> unify cs
   | (_, `Bottom) :: cs -> unify cs
   | _ -> raise @@ Tilambda_exception Unification_failed

@@ -60,7 +60,12 @@ ty:
   ;
 
 mono:
-  | t1 = mono; ARROW; t2 = mono { `Fun (t1, t2) }
+  | f = TY_IDENT; args = nonempty_list(simple_mono) { `TyFun (f, args) }
+  | m = simple_mono { m }
+  ;
+
+simple_mono:
+  | t1 = simple_mono; ARROW; t2 = mono { `Fun (t1, t2) }
   | i = IDENTIFIER { match i with
     | "int" -> `Int
     | "bool" -> `Bool
