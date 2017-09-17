@@ -271,6 +271,10 @@ docker run -it rootmos/lambdasylum
 
 `nil? [bool] (cons [bool] #t (nil [bool]))` ⟶ `false`
 
+`(cons [bool] #t (nil [int]))` ⟶ `type error`
+
+`(cons [int] 0 (nil [bool]))` ⟶ `type error`
+
 `head [int] (nil [int])` ⟶ `reached bottom`
 
 `head [int] (cons [int] 0 (nil [int]))` ⟶ `0`

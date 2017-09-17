@@ -1,9 +1,15 @@
-type ty = [
+type mono = [
   `Int
 | `Bool
-| `Fun of ty * ty
-| `Thunk of ty
+| `Fun of mono * mono
+| `Thunk of mono
 | `Bottom
+| `TyVar of string
+]
+
+type ty = [
+  mono
+| `Forall of string * ty
 ]
 
 type pattern = [`Ident of string | `Wildcard]

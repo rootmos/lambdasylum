@@ -1,32 +1,37 @@
 open Core_kernel.Std
 open Printf
 
-type ty = [
+type mono = [
   `Int
 | `Bool
-| `Fun of ty * ty
-| `Thunk of ty
+| `Fun of mono * mono
+| `Thunk of mono
 | `Bottom
-| `TyVar of int
+| `TyVar of string
+]
+
+type ty = [
+  mono
+| `Forall of string * ty
 ]
 
 type pattern = [`Ident of string | `Wildcard]
 
 type term = [
-  `App of term * term * ty
-| `Lambda of pattern * ty * term
-| `Att of term * ty
+  `App of term * term * mono
+| `Lambda of pattern * mono * term
+| `Att of term * mono
 | `Ident of string
 | `Int of int
 | `Bool of bool
 | `Bottom
 | `Thunk of term
-| `Force of term * ty
+| `Force of term * mono
 ]
 
 module FreshTyVar = Fresh.Gen(struct
-  type t = ty
-  let mk i = `TyVar i
+  type t = mono
+  let mk i = `TyVar (sprintf "_%d" i)
 end)
 
 type error =
@@ -50,21 +55,7 @@ let parse s =
   | Lexer.Syntax_error msg -> raise @@ Tilambda_exception (Lexing msg)
 
 let parse_type s =
-  let ty = Lexing.from_string s |> Tilambda_parser.ty_eof Lexer.read in
-  (ty :> ty)
-
-let rec introduce_tyvars: Tilambda_parsetree.term -> term  = function
-  | `Lambda (p, None, t) ->
-      `Lambda (p, FreshTyVar.next (), introduce_tyvars t)
-  | `Lambda (p, Some ty, t) ->
-      `Lambda (p, (ty :> ty), introduce_tyvars t)
-  | `App (t0, t1) ->
-      let ty = FreshTyVar.next () in
-      `App (introduce_tyvars t0, introduce_tyvars t1, ty)
-  | `Att (t, ty) -> `Att (introduce_tyvars t, (ty :> ty))
-  | `Thunk t -> `Thunk (introduce_tyvars t)
-  | `Force t -> `Force (introduce_tyvars t, FreshTyVar.next ())
-  | `Ident _ | `Int _ | `Bool _ | `Bottom as t -> t
+  Lexing.from_string s |> Tilambda_parser.ty_eof Lexer.read
 
 module TyCtx = Bindings.Make(struct
   type t = ty
@@ -84,16 +75,56 @@ let predef = TyCtx.(
       "leq?", parse_type "int->int->bool";
       "succ", parse_type "int->int";
       "pred", parse_type "int->int";
+
+      "if", parse_type "∀T.bool->T->T->T";
+      (* TODO: add proper type functions, this is just a hack *)
+      "nil", parse_type "∀T.(T->Z->Z)->Z->Z";
+      "nil?", parse_type "∀T.((T->Z->Z)->Z->Z)->bool";
+      "cons", parse_type "∀T.T->((T->Z->Z)->Z->Z)->((T->Z->Z)->Z->Z)";
+      "head", parse_type "∀T.((T->Z->Z)->Z->Z)->T";
+      "tail", parse_type "∀T.((T->Z->Z)->Z->Z)->((T->Z->Z)->Z->Z)";
     ]
   }
 )
+
+let rec sub_ty i t: mono -> mono = function
+  | `TyVar j when i = j -> t
+  | `Thunk ty -> `Thunk (sub_ty i t ty)
+  | `Fun (ty0, ty1) -> `Fun (sub_ty i t ty0, sub_ty i t ty1)
+  | s -> s
+
+let rec sub_ty' i (t: mono): ty -> ty = function
+  | `Forall (j, ty) when i <> j -> `Forall (j, sub_ty' i t ty)
+  | `TyVar j when i = j -> (t :> ty)
+  | `Thunk ty -> `Thunk (sub_ty i t ty)
+  | `Fun (ty0, ty1) -> `Fun (sub_ty i t ty0, sub_ty i t ty1)
+  | s -> s
+
+let rec inst: ty -> mono = function
+  | `Forall (i, ty) ->
+      let tv = FreshTyVar.next () in
+      inst (sub_ty' i tv ty)
+  | `Int | `Bool | `Fun _ | `Thunk _ | `Bottom | `TyVar _ as ty -> ty
+
+let rec introduce_tyvars: Tilambda_parsetree.term -> term  = function
+  | `Lambda (p, None, t) ->
+      `Lambda (p, FreshTyVar.next (), introduce_tyvars t)
+  | `Lambda (p, Some ty, t) ->
+      `Lambda (p, inst ty, introduce_tyvars t)
+  | `App (t0, t1) ->
+      let ty = FreshTyVar.next () in
+      `App (introduce_tyvars t0, introduce_tyvars t1, ty)
+  | `Att (t, ty) -> `Att (introduce_tyvars t, inst ty)
+  | `Thunk t -> `Thunk (introduce_tyvars t)
+  | `Force t -> `Force (introduce_tyvars t, FreshTyVar.next ())
+  | `Ident _ | `Int _ | `Bool _ | `Bottom as t -> t
 
 let derive_constraints t =
   let rec go ~ctx cs = function
     | `Int _ -> `Int, cs
     | `Bool _ -> `Bool, cs
     | `Bottom -> `Bottom, cs
-    | `Ident n -> TyCtx.lookup ctx n, cs
+    | `Ident n -> TyCtx.lookup ctx n |> inst, cs
     | `Thunk t ->
         let ty, cs' = go ~ctx cs t in `Thunk ty, cs'
     | `Att (t, ty) ->
@@ -103,7 +134,7 @@ let derive_constraints t =
         let ty', cs' = go ~ctx cs t in
         ty, (`Thunk ty, ty') :: cs'
     | `Lambda (`Ident n, ty0, t) ->
-        let ctx = TyCtx.bind ctx n ty0 in
+        let ctx = TyCtx.bind ctx n (ty0 :> ty) in
         let ty1, cs' = go ~ctx cs t in
         `Fun (ty0, ty1), cs'
     | `Lambda (`Wildcard, ty0, t) ->
@@ -114,12 +145,6 @@ let derive_constraints t =
         let ty1, cs'' = go ~ctx cs' t1 in
         ty, (ty0, `Fun (ty1, ty)) :: cs''
   in go ~ctx:predef [] t |> snd
-
-let rec sub_ty i t = function
-  | `TyVar j when i = j -> t
-  | `Thunk ty -> `Thunk (sub_ty i t ty)
-  | `Fun (ty0, ty1) -> `Fun (sub_ty i t ty0, sub_ty i t ty1)
-  | s -> s
 
 let rec occurs i = function
   | `TyVar j when i = j -> true

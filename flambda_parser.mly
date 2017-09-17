@@ -14,7 +14,7 @@ term:
 
 inner_term:
   | LAMBDA; p = pattern; COLON; ty = ty; DOT; t = term { `Lambda (p, ty, t) }
-  | CAPITAL_LAMBDA; tv = ty_var; DOT; t = term { `TyLambda (tv, t) }
+  | CAPITAL_LAMBDA; tv = TY_IDENT; DOT; t = term { `TyLambda (tv, t) }
   | t1 = simple_term; o = operator; t2 = term { `App (`App (o, t1), t2) }
   | t = term; LSB; ty = ty; RSB { `TyApp (t, ty) }
   | t1 = term; t2 = simple_term { `App (t1, t2) }
@@ -52,7 +52,7 @@ ty_eof:
 
 ty:
   | t1 = ty; ARROW; t2 = ty { `Fun (t1, t2) }
-  | FORALL; tv = ty_var; DOT; t = ty { `Forall (tv, t) }
+  | FORALL; tv = TY_IDENT; DOT; t = ty { `Forall (tv, t) }
   | i = IDENTIFIER { match i with
     | "int" -> `Int
     | "bool" -> `Bool
@@ -61,8 +61,4 @@ ty:
   | i = TY_IDENT { `TyIdent i }
   | t = delimited(LBR, ty, RBR) { `Thunk t }
   | t = delimited(LPAR, ty, RPAR) { t }
-  ;
-
-ty_var:
-  | i = TY_IDENT { i }
   ;

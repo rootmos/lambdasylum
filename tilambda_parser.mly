@@ -1,6 +1,8 @@
 %start <Tilambda_parsetree.term> program
 %start <Tilambda_parsetree.ty> ty_eof
 
+%type <Tilambda_parsetree.mono> mono
+
 %%
 
 program:
@@ -53,11 +55,17 @@ ty_eof:
   ;
 
 ty:
-  | t1 = ty; ARROW; t2 = ty { `Fun (t1, t2) }
+  | FORALL; tv = TY_IDENT; DOT; t = ty { `Forall (tv, t) }
+  | ty = mono; { (ty :> Tilambda_parsetree.ty) }
+  ;
+
+mono:
+  | t1 = mono; ARROW; t2 = mono { `Fun (t1, t2) }
   | i = IDENTIFIER { match i with
     | "int" -> `Int
     | "bool" -> `Bool
     | _ -> raise Error
   }
-  | t = delimited(LPAR, ty, RPAR) { t }
+  | i = TY_IDENT { `TyVar i }
+  | t = delimited(LPAR, mono, RPAR) { t }
   ;

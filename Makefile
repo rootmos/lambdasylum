@@ -1,3 +1,6 @@
+.PHONY: all
+all: test repl-build
+
 .PHONY: test
 test:
 	jbuilder build tests.exe

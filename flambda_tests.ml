@@ -24,6 +24,8 @@ module T = Test_suite.Make2(struct
     "nil? [bool] (nil [int])", `TypeError;
     "nil? [int] (cons [int] 0 (nil [int]))", `Bool false;
     "nil? [bool] (cons [bool] #t (nil [bool]))", `Bool false;
+    "(cons [bool] #t (nil [int]))", `TypeError;
+    "(cons [int] 0 (nil [bool]))", `TypeError;
     "head [int] (nil [int])", `Bottom;
     "head [int] (cons [int] 0 (nil [int]))", `Int 0;
     "head [bool] (cons [bool] #f (nil [bool]))", `Bool false;
