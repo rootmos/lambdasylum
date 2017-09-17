@@ -172,6 +172,7 @@ let rec unify = function
       | Some cs' -> unify (List.append cs' cs)
       | None -> raise @@ Tilambda_exception Unification_failed
       end
+  | (`Thunk s, `Thunk t) :: cs -> unify @@ (s, t) :: cs
   | (`Bottom, _) :: cs -> unify cs
   | (_, `Bottom) :: cs -> unify cs
   | _ -> raise @@ Tilambda_exception Unification_failed

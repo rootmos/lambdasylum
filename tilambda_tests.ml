@@ -12,6 +12,7 @@ module T = Test_suite.Make2(struct
     "(⊥:int->bool) 7", `Bottom;
 
     "if #t 0 1", `Int 0;
+    "(if #t {0} {⊥})!", `Int 0;
 
     "nil? nil", `Bool true;
     "nil? (cons 0 nil)", `Bool false;
