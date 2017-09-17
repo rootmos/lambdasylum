@@ -11,7 +11,7 @@ let identifier = identifier_initial_char identifier_subsequent_char*
 
 let ty_ident_initial_char = ['A'-'Z']
 let ty_ident_subsequent_char =
-  ty_ident_initial_char | ['A'-'Z' '0'-'9' '_' '?']
+  ty_ident_initial_char | ['a'-'z' '0'-'9' '_' '?']
 let ty_ident = ty_ident_initial_char ty_ident_subsequent_char*
 
 let wildcard_initial_char = '_'

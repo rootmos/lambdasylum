@@ -17,12 +17,15 @@ let help () =
   printf ":clambda  switch to core lambda calculus\n";
   printf ":ulambda  switch to untyped lambda calculus with Church encodings\n";
   printf ":tlambda  switch to simply typed lambda calculus\n";
-  printf ":flambda  switch to System F\n"
+  printf ":flambda  switch to System F\n";
+  printf ":tilambda switch to a type-inferred lambda calculus (Hindley–Milner style)\n";
+  ()
 
 let clambda = { name = "clambda"; compile = Clambda.compile }
 let ulambda = { name = "ulambda"; compile = Ulambda.compile }
 let tlambda = { name = "tlambda"; compile = Tlambda.compile }
 let flambda = { name = "flambda"; compile = Flambda.compile }
+let tilambda = { name = "tilambda"; compile = Tilambda.compile }
 
 let rec repl c () =
   printf "%s> " c.name;
@@ -33,7 +36,8 @@ let rec repl c () =
     | Some l when String.is_prefix l ":h" -> help (); repl c ()
     | Some l when String.is_prefix l ":c" -> repl clambda ()
     | Some l when String.is_prefix l ":u" -> repl ulambda ()
-    | Some l when String.is_prefix l ":t" -> repl tlambda ()
+    | Some l when String.is_prefix l ":tl" -> repl tlambda ()
+    | Some l when String.is_prefix l ":ti" -> repl tilambda ()
     | Some l when String.is_prefix l ":f" -> repl flambda ()
     | Some l ->
         c.compile l
@@ -51,4 +55,4 @@ let welcome () =
 
 let () =
   welcome ();
-  repl ulambda ()
+  repl tilambda ()

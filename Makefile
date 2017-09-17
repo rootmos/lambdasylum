@@ -1,3 +1,6 @@
+.PHONY: all
+all: test repl-build calculi.png
+
 .PHONY: test
 test:
 	jbuilder build tests.exe
@@ -14,3 +17,6 @@ repl-build:
 .PHONY: clean
 clean:
 	rm -rf _build
+
+calculi.png: calculi.dot
+	dot -Tpng $< > $@

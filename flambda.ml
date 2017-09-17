@@ -112,9 +112,14 @@ let rec erase = function
 | `Force t -> `Force (erase t)
 | `Int _ | `Bool _ | `Bottom | `Ident _ as t -> t
 
-let compile s =
+let front_end s =
   let fl = parse s in
   let _ = typecheck predef fl in
-  erase fl
+  fl
+
+let via_ulambda fl = fl
+  |> erase
   |> Ulambda.church
   |> Clambda.reduce Ulambda.church_predef ~k:(fun x -> x)
+
+let compile s = s |> front_end |> via_ulambda

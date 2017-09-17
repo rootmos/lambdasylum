@@ -1,3 +1,4 @@
+open Core_kernel.Std
 open Printf
 
 type ty = Tlambda_parsetree.ty
@@ -70,9 +71,19 @@ let rec erase = function
 | `Lambda (p, _, t) -> `Lambda (p, erase t)
 | `App (t0, t1) -> `App (erase t0, erase t1)
 
-let compile s =
+let front_end s =
   let tl = parse s in
   let _ = typecheck predef tl in
-  erase tl
+  tl
+
+let via_ulambda tl = tl
+  |> erase
   |> Ulambda.church
   |> Clambda.reduce Ulambda.church_predef ~k:(fun x -> x)
+
+let compile s = s |> front_end |> via_ulambda
+
+let embed_into_flambda (tl: Tlambda_parsetree.term) =
+  (tl :> Flambda_parsetree.term)
+
+let compile_via_flambda s = s |> front_end |> embed_into_flambda |> Flambda.via_ulambda

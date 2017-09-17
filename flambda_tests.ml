@@ -13,7 +13,7 @@ module T = Test_suite.Make2(struct
     "(ΛT.λx:T.x) [int] 0", `Int 0;
     "(ΛT.λx:T.x) [bool] 0", `TypeError;
     "(λf:∀T.T->T.f [int] 0) (ΛA.λa:A.a)", `Int 0;
-    "(λf:∀T.∀T.T->T.f [bool] [int] 0) (ΛB.ΛA.λa:A.a)", `Int 0;
+    "(λf:∀T.∀T.T->T.f [bool] [int] 0) (ΛA.ΛA.λa:A.a)", `Int 0;
     "if [int] #t 0 1", `Int 0;
     "if [int] #f 0 1", `Int 1;
     "(if [{int}] #t {0} {⊥})!", `Int 0;
@@ -24,6 +24,8 @@ module T = Test_suite.Make2(struct
     "nil? [bool] (nil [int])", `TypeError;
     "nil? [int] (cons [int] 0 (nil [int]))", `Bool false;
     "nil? [bool] (cons [bool] #t (nil [bool]))", `Bool false;
+    "(cons [bool] #t (nil [int]))", `TypeError;
+    "(cons [int] 0 (nil [bool]))", `TypeError;
     "head [int] (nil [int])", `Bottom;
     "head [int] (cons [int] 0 (nil [int]))", `Int 0;
     "head [bool] (cons [bool] #f (nil [bool]))", `Bool false;
