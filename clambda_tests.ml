@@ -15,6 +15,17 @@ module T = Test_suite.Make2(struct
     "((λx.{x}) (λa.a))!", `AlphaEqv "λa.a";
     "((λx.(λx.{x}) (λa.a)) (λb.b b))!", `AlphaEqv "λa.a";
     "((λx.(λy.{x}) (λa.a)) (λb.b b))!", `AlphaEqv "λb.b b";
+
+    "⊥", `Bottom;
+    "{⊥}", `Thunk;
+    "{{⊥}}", `Thunk;
+    "{{⊥}}!", `Thunk;
+    "{{⊥}}!!", `Bottom;
+
+    "{λx.x}!", `AlphaEqv "λx.x";
+    "(λx.x)!", `AlphaEqv "λx.x";
+    "{(λx.x) (λx.λy.x)}!", `AlphaEqv "λx.λ_.x";
+    "((λx.x) (λx.λy.x))!", `AlphaEqv "λx.λ_.x";
   ]
 end)
 
