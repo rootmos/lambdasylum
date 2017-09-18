@@ -31,25 +31,27 @@ module Ctx = Bindings.Make(struct
   let subsystem = "reducing clambda"
 end)
 
-let rec reduce ctx ~k = function
-| `Lambda _ | `Thunk _ as t -> k t
-| `Ident n -> k @@ Ctx.lookup ctx n
-| `Bottom -> raise @@ Clambda_exception ReachedBottom
-| `Force t ->
-    reduce ctx t ~k:(function
-      | `Thunk t -> reduce ctx ~k t
-      | t -> k t)
-| `App (f, a) ->
-    reduce ctx a ~k:(fun a' ->
-      reduce ctx f ~k:(fun f' ->
-        let rec l = function
-          | `Thunk t -> reduce ctx ~k:l t
-          | `Lambda (`Wildcard, t) -> reduce ctx ~k t
-          | `Lambda (`Ident n, t) ->
-              let ctx' = Ctx.bind ctx n a'
-              and t' = substitute n (a' :> term) t in
-              reduce ctx' ~k t' in
-        l f'))
+let reduce ctx t =
+  let rec go ~ctx ~k = function
+    | `Lambda _ | `Thunk _ as t -> k t
+    | `Ident n -> k @@ Ctx.lookup ctx n
+    | `Bottom -> raise @@ Clambda_exception ReachedBottom
+    | `Force t ->
+        go ~ctx t ~k:(function
+          | `Thunk t -> go ~ctx ~k t
+          | t -> k t)
+    | `App (f, a) ->
+        go ~ctx a ~k:(fun a' ->
+          go ~ctx f ~k:(fun f' ->
+            let rec l = function
+              | `Thunk t -> go ~ctx ~k:l t
+              | `Lambda (`Wildcard, t) -> go ~ctx ~k t
+              | `Lambda (`Ident n, t) ->
+                  let ctx = Ctx.bind ctx n a'
+                  and t' = substitute n (a' :> term) t
+                  in go ~ctx ~k t'
+            in l f'))
+  in go ~ctx ~k:(fun x -> x) t
 
 let rec de_brujin_term ~ctx = function
 | `App (t0, t1) -> `App (de_brujin_term ~ctx t0, de_brujin_term ~ctx t1)
@@ -82,4 +84,4 @@ let alpha_equivalent v0 v1 =
 
 let compile s = s
   |> parse
-  |> reduce Ctx.empty ~k:(fun x -> x)
+  |> reduce Ctx.empty

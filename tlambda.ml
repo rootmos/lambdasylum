@@ -79,7 +79,7 @@ let front_end s =
 let via_ulambda tl = tl
   |> erase
   |> Ulambda.church
-  |> Clambda.reduce Ulambda.church_predef ~k:(fun x -> x)
+  |> Clambda.reduce Ulambda.church_predef
 
 let compile s = s |> front_end |> via_ulambda
 

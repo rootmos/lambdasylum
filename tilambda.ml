@@ -109,18 +109,16 @@ let rec inst: ty -> mono = function
   | `Int | `Bool | `Fun _ | `Thunk _ | `Bottom | `TyVar _
   | `TyFun _ as ty -> ty
 
-let rec introduce_tyvars: Tilambda_parsetree.term -> term  = function
-  | `Lambda (p, None, t) ->
-      `Lambda (p, FreshTyVar.next (), introduce_tyvars t)
-  | `Lambda (p, Some ty, t) ->
-      `Lambda (p, inst ty, introduce_tyvars t)
-  | `App (t0, t1) ->
-      let ty = FreshTyVar.next () in
-      `App (introduce_tyvars t0, introduce_tyvars t1, ty)
-  | `Att (t, ty) -> `Att (introduce_tyvars t, inst ty)
-  | `Thunk t -> `Thunk (introduce_tyvars t)
-  | `Force t -> `Force (introduce_tyvars t, FreshTyVar.next ())
-  | `Ident _ | `Int _ | `Bool _ | `Bottom as t -> t
+let introduce_tyvars (t: Tilambda_parsetree.term): term =
+  let rec go = function
+    | `Lambda (p, None, t) -> `Lambda (p, FreshTyVar.next (), go t)
+    | `Lambda (p, Some ty, t) -> `Lambda (p, inst ty, go t)
+    | `App (t0, t1) -> let ty = FreshTyVar.next () in `App (go t0, go t1, ty)
+    | `Att (t, ty) -> `Att (go t, inst ty)
+    | `Thunk t -> `Thunk (go t)
+    | `Force t -> `Force (go t, FreshTyVar.next ())
+    | `Ident _ | `Int _ | `Bool _ | `Bottom as t -> t
+  in go t
 
 module Acc = struct
   include Base.Monad.Make(struct
@@ -188,8 +186,7 @@ let rec unify = function
       | None -> raise @@ Tilambda_exception Unification_failed
       end
   | (`Thunk s, `Thunk t) :: cs -> unify @@ (s, t) :: cs
-  | (`Bottom, _) :: cs -> unify cs
-  | (_, `Bottom) :: cs -> unify cs
+  | (`Bottom, _) :: cs | (_, `Bottom) :: cs -> unify cs
   | _ -> raise @@ Tilambda_exception Unification_failed
 
 let sub_ty_in_term sub t =
@@ -241,7 +238,7 @@ let front_end s = s
 let via_ulambda tl = tl
   |> erase
   |> Ulambda.church
-  |> Clambda.reduce Ulambda.church_predef ~k:(fun x -> x)
+  |> Clambda.reduce Ulambda.church_predef
 
 let type_of s = s |> front_end |> fst |> pretty_type
 

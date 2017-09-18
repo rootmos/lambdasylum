@@ -173,4 +173,4 @@ let pretty v =
 let compile s = s
     |> parse
     |> church
-    |> Clambda.reduce church_predef ~k:(fun x -> x)
+    |> Clambda.reduce church_predef
