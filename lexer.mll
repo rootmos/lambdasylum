@@ -42,6 +42,9 @@ rule read = parse
   | "⊥" { BOT }
   | '!' { EXCL }
   | "\\bot" { BOT }
+  | "let" { LET }
+  | "in" { IN }
+  | '=' { EQUAL }
   | ws { read lexbuf }
   | int { INT (int_of_string (L.lexeme lexbuf)) }
   | '#' (['a'-'z'] as c) { HASH c }

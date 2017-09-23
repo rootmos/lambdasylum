@@ -19,6 +19,7 @@ inner_term:
     `Lambda (p, Some ty, t)
   }
   | LAMBDA; p = pattern; DOT; t = term { `Lambda (p, None, t) }
+  | LET; p = pattern; EQUAL; e = term; IN; b = term { `Let (p, e, b) }
   | t1 = simple_term; o = operator; t2 = term { `App (`App (o, t1), t2) }
   | t1 = term; t2 = simple_term { `App (t1, t2) }
   | t = simple_term { t }

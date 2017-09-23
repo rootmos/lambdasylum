@@ -21,6 +21,7 @@ type pattern = [`Ident of string | `Wildcard]
 type term = [
   `App of term * term * mono
 | `Lambda of pattern * mono * term
+| `Let of pattern * term * term
 | `Att of term * mono
 | `Ident of string
 | `Int of int
@@ -113,6 +114,7 @@ let introduce_tyvars (t: Tilambda_parsetree.term): term =
   let rec go = function
     | `Lambda (p, None, t) -> `Lambda (p, FreshTyVar.next (), go t)
     | `Lambda (p, Some ty, t) -> `Lambda (p, inst ty, go t)
+    | `Let (p, e, b) -> `Let (p, go e, go b)
     | `App (t0, t1) -> let ty = FreshTyVar.next () in `App (go t0, go t1, ty)
     | `Att (t, ty) -> `Att (go t, inst ty)
     | `Thunk t -> `Thunk (go t)
@@ -155,6 +157,12 @@ let derive_constraints t =
     | `Lambda (`Wildcard, ty0, t) ->
         let%map ty1 = go ~ctx t in
         `Fun (ty0, ty1)
+    | `Let (`Ident n, e, b) ->
+        let%bind te = go ~ctx e in
+        let ctx = TyCtx.bind ctx n (te :> ty) in
+        go ~ctx b
+    | `Let (`Wildcard, e, b) ->
+        let%bind _ = go ~ctx e in go ~ctx t
     | `App (t0, t1, ty) ->
         let%bind ty0 = go ~ctx t0 in
         let%bind ty1 = go ~ctx t1 in
@@ -193,6 +201,7 @@ let sub_ty_in_term sub t =
   let rec go = function
     | `App (t0, t1, ty) -> `App (go t0, go t1, sub ty)
     | `Lambda (p, ty, t) -> `Lambda (p, sub ty, go t)
+    | `Let (p, e, b) -> `Let (p, go e, go b)
     | `Att (t, ty) -> `Att (go t, sub ty)
     | `Force (t, ty) -> `Force (go t, sub ty)
     | `Thunk t -> `Thunk (go t)
@@ -205,6 +214,7 @@ let rec erase = function
 | `Thunk t -> `Thunk (erase t)
 | `Force (t, _) -> `Force (erase t)
 | `Lambda (p, _, t) -> `Lambda (p, erase t)
+| `Let (p, e, b) -> `App (`Lambda (p, erase b), erase e)
 | `App (t0, t1, _) -> `App (erase t0, erase t1)
 
 let pretty_type ty =

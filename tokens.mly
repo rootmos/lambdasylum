@@ -15,6 +15,9 @@
 %token HYPH
 %token BOT
 %token EXCL
+%token LET
+%token IN
+%token EQUAL
 %token <string> WILDCARD
 %token <string> IDENTIFIER
 %token <string> TY_IDENT

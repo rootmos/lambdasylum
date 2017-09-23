@@ -31,6 +31,10 @@ module T = Test_suite.Make2(struct
     "nil? (tail nil)", `Bool true, None;
     "cons #t (cons 0 nil)", `TypeError, None;
     "cons 0 (cons #f nil)", `TypeError, None;
+
+    "λf.(λ_.f 0) (f #t)", `TypeError, None;
+    "let x = 1 in x+1", `Int 2, None;
+    "let f = λy.y+1 in f 1", `Int 2, None;
   ]
 end)
 
