@@ -86,7 +86,7 @@ let rec typecheck ~ctx = function
     | `Forall (i, t') -> substitute i ty t'
     | _ -> raise @@ Flambda_exception IllTypedTypeApplication
     end
-| `Ident n -> TyCtx.lookup ctx n
+| `Ident n -> TyCtx.lookup_exn ctx n
 | `Thunk e -> `Thunk (typecheck ~ctx e)
 | `Force e ->
     begin match typecheck ~ctx e with

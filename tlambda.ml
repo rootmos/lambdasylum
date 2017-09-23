@@ -48,7 +48,7 @@ let predef = TyCtx.(
 let rec typecheck ~ctx = function
   `Int _ -> `Int
 | `Bool _ -> `Bool
-| `Ident n -> TyCtx.lookup ctx n
+| `Ident n -> TyCtx.lookup_exn ctx n
 | `Thunk e -> `Thunk (typecheck ~ctx e)
 | `Force e ->
     begin match typecheck ~ctx e with

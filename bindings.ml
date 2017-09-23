@@ -19,8 +19,9 @@ end) = struct
 
   let bind ctx n v = { bindings = (n, v) :: ctx.bindings }
 
-  let lookup ctx n =
-    match List.Assoc.find ~equal:(=) ctx.bindings n with
+  let lookup ctx n = List.Assoc.find ~equal:(=) ctx.bindings n
+  let lookup_exn ctx n = match lookup ctx n with
     | Some v -> v
     | None -> raise @@ Bindings_exception (Unbound n, V.subsystem)
+  let exists ctx n = Option.(lookup ctx n |> is_some)
 end

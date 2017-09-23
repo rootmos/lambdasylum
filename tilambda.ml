@@ -133,6 +133,15 @@ module Acc = struct
   let tell c = (), [c]
 end
 
+let free ctx ty =
+  let rec go acc ~k = function
+    | `TyVar n -> if TyCtx.exists ctx n then k acc else k (n :: acc)
+    | `Thunk ty -> go acc ~k ty
+    | `Fun (ty0, ty1) -> go acc ty0 ~k:(fun acc -> go acc ty1 ~k)
+    | `TyFun (f, args) -> failwith "not implemented"
+    | s -> k acc
+  in go [] ty ~k:(fun x -> x) |> List.dedup
+
 let derive_constraints t =
   let open Acc in
   let open Let_syntax in
@@ -140,7 +149,7 @@ let derive_constraints t =
     | `Int _ -> return `Int
     | `Bool _ -> return `Bool
     | `Bottom -> return `Bottom
-    | `Ident n -> TyCtx.lookup ctx n |> inst |> return
+    | `Ident n -> TyCtx.lookup_exn ctx n |> inst |> return
     | `Thunk t -> let%map ty = go ~ctx t in `Thunk ty
     | `Att (t, ty) ->
         let%bind ty' = go ~ctx t in
@@ -159,7 +168,10 @@ let derive_constraints t =
         `Fun (ty0, ty1)
     | `Let (`Ident n, e, b) ->
         let%bind te = go ~ctx e in
-        let ctx = TyCtx.bind ctx n (te :> ty) in
+        let fs = free ctx te in
+        let gen_te = List.fold_right fs
+          ~init:(te :> ty) ~f:(fun n t -> `Forall (n, t)) in
+        let ctx = TyCtx.bind ctx n gen_te in
         go ~ctx b
     | `Let (`Wildcard, e, b) ->
         let%bind _ = go ~ctx e in go ~ctx t

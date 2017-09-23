@@ -34,7 +34,7 @@ end)
 let reduce ctx t =
   let rec go ~ctx ~k = function
     | `Lambda _ | `Thunk _ as t -> k t
-    | `Ident n -> k @@ Ctx.lookup ctx n
+    | `Ident n -> k @@ Ctx.lookup_exn ctx n
     | `Bottom -> raise @@ Clambda_exception ReachedBottom
     | `Force t ->
         go ~ctx t ~k:(function

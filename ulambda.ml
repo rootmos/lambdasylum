@@ -93,7 +93,7 @@ let rec reduce_church ctx = function
 | `Succ | `Int _ | `Bool _ | `Lambda _ as t' -> return t'
 | `Bottom -> fail "reached bottom"
 | `Thunk _ | `Force _ -> fail "encountered thunk (ill-formed church numeral)"
-| `Ident n -> return @@ Ctx_term_arith.lookup ctx n
+| `Ident n -> return @@ Ctx_term_arith.lookup_exn ctx n
 | `App (f, a) ->
     let%bind f' = reduce_church ctx f
     and a' = reduce_church ctx a in
