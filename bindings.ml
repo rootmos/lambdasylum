@@ -24,4 +24,9 @@ end) = struct
     | Some v -> v
     | None -> raise @@ Bindings_exception (Unbound n, V.subsystem)
   let exists ctx n = Option.(lookup ctx n |> is_some)
+
+  let to_list t ~f = List.map t.bindings ~f
+  let map t ~f = {
+    bindings = List.map t.bindings ~f:(fun (n, t) -> n, f t)
+  }
 end

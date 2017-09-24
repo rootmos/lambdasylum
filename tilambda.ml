@@ -4,17 +4,42 @@ open Printf
 type mono = [
   `Int
 | `Bool
+| `Bottom
 | `Fun of mono * mono
 | `Thunk of mono
-| `Bottom
 | `TyVar of string
 | `TyFun of string * mono list
 ]
+[@@deriving sexp]
 
 type ty = [
   mono
 | `Forall of string * ty
 ]
+[@@deriving sexp]
+
+let pretty_type (ty: ty) =
+  let parenthesize s = function 0 -> s | _ -> sprintf "(%s)" s in
+  let rec go: ty -> string * int = function
+  | `Int -> "int", 0
+  | `Bool -> "bool", 0
+  | `Fun (t0, t1) ->
+      let s0, p0 = go (t0 :> ty) and s1, p1 = go (t1 :> ty) in
+      sprintf "%s->%s" (parenthesize s0 p0) s1, p0 + p1 + 1
+  | `Thunk t -> sprintf "{%s}" (go (t :> ty) |> fst), 0
+  | `Bottom -> "⊥", 0
+  | `TyVar n -> n, 0
+  | `Forall (n, ty) ->
+      let s0, p0 = go ty in
+      sprintf "∀%s.%s" n s0, p0+1
+  | `TyFun (n, args) ->
+      List.( args
+        >>| (fun s -> let s, p = go (s :> ty) in parenthesize s p)
+        |> cons n
+        |> intersperse ~sep:" "
+        |> String.concat, length args
+      )
+  in go ty |> fst
 
 type pattern = [`Ident of string | `Wildcard]
 
@@ -133,54 +158,24 @@ module Acc = struct
   let tell c = (), [c]
 end
 
-let free ctx ty =
-  let rec go acc ~k = function
-    | `TyVar n -> if TyCtx.exists ctx n then k acc else k (n :: acc)
-    | `Thunk ty -> go acc ~k ty
-    | `Fun (ty0, ty1) -> go acc ty0 ~k:(fun acc -> go acc ty1 ~k)
-    | `TyFun (f, args) -> failwith "not implemented"
-    | s -> k acc
-  in go [] ty ~k:(fun x -> x) |> List.dedup
+module TySet = Set.Make(struct
+  type t = mono [@@deriving sexp]
+  let compare = Pervasives.compare
+end)
 
-let derive_constraints t =
-  let open Acc in
-  let open Let_syntax in
-  let rec go ~ctx = function
-    | `Int _ -> return `Int
-    | `Bool _ -> return `Bool
-    | `Bottom -> return `Bottom
-    | `Ident n -> TyCtx.lookup_exn ctx n |> inst |> return
-    | `Thunk t -> let%map ty = go ~ctx t in `Thunk ty
-    | `Att (t, ty) ->
-        let%bind ty' = go ~ctx t in
-        let%map () = tell (ty, ty') in
-        ty
-    | `Force (t, ty) ->
-        let%bind ty' = go ~ctx t in
-        let%map () = tell (`Thunk ty, ty') in
-        ty
-    | `Lambda (`Ident n, ty0, t) ->
-        let ctx = TyCtx.bind ctx n (ty0 :> ty) in
-        let%map ty1 = go ~ctx t in
-        `Fun (ty0, ty1)
-    | `Lambda (`Wildcard, ty0, t) ->
-        let%map ty1 = go ~ctx t in
-        `Fun (ty0, ty1)
-    | `Let (`Ident n, e, b) ->
-        let%bind te = go ~ctx e in
-        let fs = free ctx te in
-        let gen_te = List.fold_right fs
-          ~init:(te :> ty) ~f:(fun n t -> `Forall (n, t)) in
-        let ctx = TyCtx.bind ctx n gen_te in
-        go ~ctx b
-    | `Let (`Wildcard, e, b) ->
-        let%bind _ = go ~ctx e in go ~ctx t
-    | `App (t0, t1, ty) ->
-        let%bind ty0 = go ~ctx t0 in
-        let%bind ty1 = go ~ctx t1 in
-        let%map () = tell (ty0, `Fun (ty1, ty)) in
-        ty
-  in go ~ctx:predef t
+let free_ty ty =
+  let open TySet in
+  let rec go = function
+    | `Forall (n, ty) -> remove (go ty) (`TyVar n)
+    | `Fun (ty0, ty1) -> union (go (ty0 :> ty)) (go (ty1 :> ty))
+    | `Thunk ty -> go (ty :> ty)
+    | `TyVar _ as t -> singleton t
+    | `TyFun (f, args) -> union_list (List.map ~f:(fun m -> go (m :> ty)) args)
+    | `Int | `Bool | `Bottom -> empty
+  in go ty
+
+let free_ctx ctx =
+  TyCtx.to_list ctx ~f:(fun (_, ty) -> free_ty ty) |> TySet.union_list
 
 let rec occurs i = function
   | `TyVar j when i = j -> true
@@ -220,6 +215,51 @@ let sub_ty_in_term sub t =
     | t -> t
   in go t
 
+let derive_constraints t =
+  let open Acc in
+  let open Let_syntax in
+  let rec go ~ctx = function
+    | `Int _ -> return `Int
+    | `Bool _ -> return `Bool
+    | `Bottom -> return `Bottom
+    | `Ident n -> TyCtx.lookup_exn ctx n |> inst |> return
+    | `Thunk t -> let%map ty = go ~ctx t in `Thunk ty
+    | `Att (t, ty) ->
+        let%bind ty' = go ~ctx t in
+        let%map () = tell (ty, ty') in
+        ty
+    | `Force (t, ty) ->
+        let%bind ty' = go ~ctx t in
+        let%map () = tell (`Thunk ty, ty') in
+        ty
+    | `Lambda (`Ident n, ty0, t) ->
+        let ctx = TyCtx.bind ctx n (ty0 :> ty) in
+        let%map ty1 = go ~ctx t in
+        `Fun (ty0, ty1)
+    | `Lambda (`Wildcard, ty0, t) ->
+        let%map ty1 = go ~ctx t in
+        `Fun (ty0, ty1)
+    | `Let (`Ident n, e, b) ->
+        let te, cs = go ~ctx e in
+        let sub = unify cs in (*TODO: use this unification to simplify ctx, cs*)
+        let te = sub te in
+        let fs = TySet.diff (free_ty (te :> ty)) (free_ctx ctx) in
+        let gen_te = TySet.fold_right fs ~init:(te :> ty) ~f:(fun t s ->
+            match t with
+            | `TyVar n -> `Forall (n, s)
+            | _ -> s
+        ) in
+        let ctx = TyCtx.bind ctx n gen_te in
+        go ~ctx b
+    | `Let (`Wildcard, e, b) ->
+        let%bind _ = go ~ctx e in go ~ctx t
+    | `App (t0, t1, ty) ->
+        let%bind ty0 = go ~ctx t0 in
+        let%bind ty1 = go ~ctx t1 in
+        let%map () = tell (ty0, `Fun (ty1, ty)) in
+        ty
+  in go ~ctx:predef t
+
 let rec erase = function
   `Int _ | `Bool _ | `Ident _ | `Bottom as t -> t
 | `Att (t, _) -> erase t
@@ -228,26 +268,6 @@ let rec erase = function
 | `Lambda (p, _, t) -> `Lambda (p, erase t)
 | `Let (p, e, b) -> `App (`Lambda (p, erase b), erase e)
 | `App (t0, t1, _) -> `App (erase t0, erase t1)
-
-let pretty_type ty =
-  let parenthesize s = function 0 -> s | _ -> sprintf "(%s)" s in
-  let rec go = function
-  | `Int -> "int", 0
-  | `Bool -> "bool", 0
-  | `Fun (t0, t1) ->
-      let s0, p0 = go t0 and s1, p1 = go t1 in
-      sprintf "%s->%s" (parenthesize s0 p0) s1, p0 + p1 + 1
-  | `Thunk t -> sprintf "{%s}" (go t |> fst), 0
-  | `Bottom -> "⊥", 0
-  | `TyVar n -> n, 0
-  | `TyFun (n, args) ->
-      List.( args
-        >>| (fun s -> let s, p = go s in parenthesize s p)
-        |> cons n
-        |> intersperse ~sep:" "
-        |> String.concat, length args
-      )
-  in go ty |> fst
 
 let front_end s = s
   |> parse
@@ -262,6 +282,6 @@ let via_ulambda tl = tl
   |> Ulambda.church
   |> Clambda.reduce Ulambda.church_predef
 
-let type_of s = s |> front_end |> fst |> pretty_type
+let type_of s = s |> front_end |> fst |> fun ty -> pretty_type (ty :> ty)
 
 let compile s = s |> front_end |> snd |> via_ulambda
