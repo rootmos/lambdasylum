@@ -41,6 +41,7 @@ module T = Test_suite.Make2(struct
       "rank-2 polymorphism not supported";
     "let f = λx.λtl.cons x tl in head (f 0 nil)", `Int 0, None;
     "let f = λx.λtl.cons x tl in head (f 0 1)", `TypeError, None;
+    "λx.let f = λy.y+x in and x x", `TypeError, None;
   ]
 end)
 

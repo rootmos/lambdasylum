@@ -156,6 +156,7 @@ module Acc = struct
   end)
 
   let tell c = (), [c]
+  let tell_many cs = (),cs
 end
 
 module TySet = Set.Make(struct
@@ -250,7 +251,7 @@ let derive_constraints t =
             | _ -> s
         ) in
         let ctx = TyCtx.bind ctx n gen_te in
-        go ~ctx b
+        (b, cs) >>= go ~ctx
     | `Let (`Wildcard, e, b) ->
         let%bind _ = go ~ctx e in go ~ctx t
     | `App (t0, t1, ty) ->
