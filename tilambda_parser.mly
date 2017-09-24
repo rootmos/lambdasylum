@@ -15,7 +15,7 @@ term:
   ;
 
 inner_term:
-  | LAMBDA; p = pattern; COLON; ty = ty; DOT; t = term {
+  | LAMBDA; p = pattern; COLON; ty = mono; DOT; t = term {
     `Lambda (p, Some ty, t)
   }
   | LAMBDA; p = pattern; DOT; t = term { `Lambda (p, None, t) }
@@ -27,7 +27,7 @@ inner_term:
 
 simple_term:
   | t = simple_term; EXCL { `Force t }
-  | t = simple_term; COLON; ty = ty { `Att (t, ty) }
+  | t = simple_term; COLON; ty = mono { `Att (t, ty) }
   | i = IDENTIFIER { `Ident i }
   | i = INT { `Int i }
   | h = HASH { match h with

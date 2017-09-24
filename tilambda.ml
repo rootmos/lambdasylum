@@ -128,20 +128,13 @@ let rec sub_ty' i (t: mono): ty -> ty = function
   | `TyFun (f, args) -> `TyFun (f, List.(args >>| sub_ty i t))
   | s -> s
 
-let rec inst: ty -> mono = function
-  | `Forall (i, ty) ->
-      let tv = FreshTyVar.next () in
-      inst (sub_ty' i tv ty)
-  | `Int | `Bool | `Fun _ | `Thunk _ | `Bottom | `TyVar _
-  | `TyFun _ as ty -> ty
-
 let introduce_tyvars (t: Tilambda_parsetree.term): term =
   let rec go = function
     | `Lambda (p, None, t) -> `Lambda (p, FreshTyVar.next (), go t)
-    | `Lambda (p, Some ty, t) -> `Lambda (p, inst ty, go t)
+    | `Lambda (p, Some ty, t) -> `Lambda (p, ty, go t)
     | `Let (p, e, b) -> `Let (p, go e, go b)
     | `App (t0, t1) -> let ty = FreshTyVar.next () in `App (go t0, go t1, ty)
-    | `Att (t, ty) -> `Att (go t, inst ty)
+    | `Att (t, ty) -> `Att (go t, ty)
     | `Thunk t -> `Thunk (go t)
     | `Force t -> `Force (go t, FreshTyVar.next ())
     | `Ident _ | `Int _ | `Bool _ | `Bottom as t -> t
@@ -215,6 +208,13 @@ let sub_ty_in_term sub t =
     | `Thunk t -> `Thunk (go t)
     | t -> t
   in go t
+
+let rec inst: ty -> mono = function
+  | `Forall (i, ty) ->
+      let tv = FreshTyVar.next () in
+      inst (sub_ty' i tv ty)
+  | `Int | `Bool | `Fun _ | `Thunk _ | `Bottom | `TyVar _
+  | `TyFun _ as ty -> ty
 
 let derive_constraints t =
   let open Acc in
