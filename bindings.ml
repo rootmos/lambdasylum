@@ -29,4 +29,6 @@ end) = struct
   let map t ~f = {
     bindings = List.map t.bindings ~f:(fun (n, t) -> n, f t)
   }
+
+  let names t = List.(t.bindings >>| fst)
 end

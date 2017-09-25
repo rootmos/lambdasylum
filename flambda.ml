@@ -22,7 +22,9 @@ let parse_type s = Lexing.from_string s |> Flambda_parser.ty_eof Lexer.read
 let explain = function
   Parsing -> sprintf "parsing error"
 | Lexing s -> sprintf "lexing error: %s" s
-| IllTypedApplication (_, _) -> sprintf "ill-typed application"
+| IllTypedApplication (t, s) ->
+    sprintf "ill-typed application: applying %s to %s"
+      (Flambda_parsetree.pretty_ty s) (Flambda_parsetree.pretty_ty t)
 | ForcingNonThunk _ -> sprintf "forcing non-thunk"
 | IllTypedTypeApplication -> sprintf "ill-typed application"
 | IllScopedType n -> sprintf "ill-scoped type %s" n
@@ -36,6 +38,7 @@ end)
 let predef = TyCtx.(
   {
     bindings = [
+      "+", parse_type "int->int->int";
       "if", parse_type "∀T.bool->T->T->T";
       "nil", parse_type "∀T.∀Z.(T->Z->Z)->Z->Z";
       "nil?", parse_type "∀T.(∀Z.(T->Z->Z)->Z->Z)->bool";
@@ -53,20 +56,22 @@ let rec substitute i ty = function
 | `Forall (i', t) when i <> i' -> `Forall (i', substitute i ty t)
 | t -> t
 
-let rec de_brujin_type ?(ctx=[]) = function
-  `Int | `Bool | `Bottom as t -> t
-| `Fun (t0, t1) -> `Fun (de_brujin_type ~ctx t0, de_brujin_type ~ctx t1)
-| `Thunk t -> `Thunk (de_brujin_type ~ctx t)
-| `TyIdent n ->
-    begin match List.find_mapi ctx ~f:(fun i -> function
-      | n' when n = n -> Some i
-      | _ -> None
-    ) with
-    | Some i -> `TyIdent i
-    | None -> raise @@ Flambda_exception (IllScopedType n)
-    end
-| `Forall (n, t) ->
-    let ctx = n :: ctx in `Forall (de_brujin_type ~ctx t)
+let rec de_brujin_type ctx ty =
+  let rec go ~ctx = function
+      `Int | `Bool | `Bottom as t -> t
+    | `Fun (t0, t1) -> `Fun (go ~ctx t0, go ~ctx t1)
+    | `Thunk t -> `Thunk (go ~ctx t)
+    | `TyIdent n ->
+        begin match List.find_mapi ctx ~f:(fun i -> function
+          | n' when n = n -> Some i
+          | _ -> None
+        ) with
+        | Some i -> `TyIdent i
+        | None -> raise @@ Flambda_exception (IllScopedType n)
+        end
+    | `Forall (n, t) ->
+        let ctx = n :: ctx in `Forall (go ~ctx t)
+  in go (TyCtx.names ctx) ty (* TODO: find (failing) test case for ctx:[] *)
 
 let rec subtype t s =
   match t, s with
@@ -100,7 +105,8 @@ let rec typecheck ~ctx = function
 | `App (f, a) ->
     match typecheck ~ctx f, typecheck ~ctx a with
     | `Fun (a0, ty), a1 when
-      subtype (de_brujin_type a1) (de_brujin_type a0) -> ty
+      subtype (de_brujin_type ctx a1) (de_brujin_type ctx a0) -> ty
+    | `Bottom, _ -> `Bottom
     | t0, t1 -> raise @@ Flambda_exception (IllTypedApplication (t0, t1))
 
 let rec erase = function

@@ -16,6 +16,7 @@ module T = Test_suite.Make2(struct
     "(λf:∀T.∀T.T->T.f [bool] [int] 0) (ΛA.ΛA.λa:A.a)", `Int 0, None;
 
     "(λx:int.x) ⊥", `Bottom, Some "⊥ is a subtype of any type";
+    "⊥ 7", `Bottom, Some "⊥ can be typed as any function type as well";
 
     "if [int] #t 0 1", `Int 0, Some "`if: ∀T.bool->T->T->T`" ;
     "if [int] #f 0 1", `Int 1, None;

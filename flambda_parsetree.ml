@@ -30,3 +30,4 @@ type term = [
 [@@deriving sexp]
 
 let pretty_term t = sexp_of_term t |> Sexp.to_string_hum
+let pretty_ty ty = sexp_of_ty ty |> Sexp.to_string_hum
