@@ -86,4 +86,7 @@ let compile s = s |> front_end |> via_ulambda
 let embed_into_flambda (tl: Tlambda_parsetree.term) =
   (tl :> Flambda_parsetree.term)
 
-let compile_via_flambda s = s |> front_end |> embed_into_flambda |> Flambda.via_ulambda
+let compile_via_flambda s = s
+  |> front_end
+  |> embed_into_flambda
+  |> Flambda.via_ulambda

@@ -1,3 +1,4 @@
+open Core_kernel.Std
 open Sexplib.Std
 
 type ty = [
@@ -27,3 +28,5 @@ type term = [
 | `Force of term
 ]
 [@@deriving sexp]
+
+let pretty_term t = sexp_of_term t |> Sexp.to_string_hum

@@ -67,6 +67,7 @@ type error =
 | IllTypedApplication of ty * ty
 | ForcingNonThunk of ty
 | Unification_failed
+| UnsupportedTypeFunction of mono
 exception Tilambda_exception of error
 
 let explain = function
@@ -75,6 +76,7 @@ let explain = function
 | IllTypedApplication (_, _) -> "ill-typed application"
 | ForcingNonThunk _ -> "forcing non-thunk"
 | Unification_failed -> "unification failed"
+| UnsupportedTypeFunction _ -> "unsupported type function"
 
 let parse s =
   try Lexing.from_string s |> Tilambda_parser.program Lexer.read with
@@ -128,7 +130,7 @@ let rec sub_ty' i (t: mono): ty -> ty = function
   | `TyFun (f, args) -> `TyFun (f, List.(args >>| sub_ty i t))
   | s -> s
 
-let introduce_tyvars (t: Tilambda_parsetree.term): term =
+let introduce_tyvars t =
   let rec go = function
     | `Lambda (p, None, t) -> `Lambda (p, FreshTyVar.next (), go t)
     | `Lambda (p, Some ty, t) -> `Lambda (p, ty, go t)
@@ -141,8 +143,10 @@ let introduce_tyvars (t: Tilambda_parsetree.term): term =
   in go t
 
 module Acc = struct
+  type 'a t = 'a * (mono * mono) list
+
   include Base.Monad.Make(struct
-    type 'a t = 'a * (mono * mono) list
+    type nonrec 'a t = 'a t
     let return a = a, []
     let bind (a, cs) ~f = let (b, cs') = f a in (b, cs @ cs')
     let map = `Define_using_bind
@@ -202,79 +206,118 @@ let sub_ty_in_term sub t =
   let rec go = function
     | `App (t0, t1, ty) -> `App (go t0, go t1, sub ty)
     | `Lambda (p, ty, t) -> `Lambda (p, sub ty, go t)
-    | `Let (p, e, b) -> `Let (p, go e, go b)
+    | `Let (p, e, ty, b) -> `Let (p, go e, (*TODO: sub *) ty, go b)
     | `Att (t, ty) -> `Att (go t, sub ty)
     | `Force (t, ty) -> `Force (go t, sub ty)
     | `Thunk t -> `Thunk (go t)
+    | `Inst (t, ty) -> `Inst (go t, sub ty)
     | t -> t
   in go t
 
-let rec inst: ty -> mono = function
-  | `Forall (i, ty) ->
-      let tv = FreshTyVar.next () in
-      inst (sub_ty' i tv ty)
-  | `Int | `Bool | `Fun _ | `Thunk _ | `Bottom | `TyVar _
-  | `TyFun _ as ty -> ty
+let generalize ~ctx ty =
+  let open TySet in
+  let bind t s =
+    match t with
+    | `TyVar n -> `Forall (n, s)
+    | _ -> s
+  in diff (free_ty (ty :> ty)) (free_ctx ctx)
+    |> fold_right ~init:(ty :> ty) ~f:bind
 
 let derive_constraints t =
   let open Acc in
   let open Let_syntax in
   let rec go ~ctx = function
-    | `Int _ -> return `Int
-    | `Bool _ -> return `Bool
-    | `Bottom -> return `Bottom
-    | `Ident n -> TyCtx.lookup_exn ctx n |> inst |> return
-    | `Thunk t -> let%map ty = go ~ctx t in `Thunk ty
+    | `Int _ as t -> return (t, `Int)
+    | `Bool _ as t -> return (t, `Bool)
+    | `Bottom as t -> return (t, `Bottom)
+    | `Ident n as t ->
+        let rec inst t = function
+          | `Forall (i, ty) ->
+              let tv = FreshTyVar.next () in
+              inst (`Inst (t, tv)) (sub_ty' i tv ty)
+          | `Int | `Bool | `Fun _ | `Thunk _ | `Bottom | `TyVar _
+          | `TyFun _ as ty -> t, ty
+        in TyCtx.lookup_exn ctx n |> inst t |> return
+    | `Thunk t -> let%map t, ty = go ~ctx t in `Thunk t, `Thunk ty
     | `Att (t, ty) ->
-        let%bind ty' = go ~ctx t in
+        let%bind t', ty' = go ~ctx t in
         let%map () = tell (ty, ty') in
-        ty
+        `Att (t', ty), ty'
     | `Force (t, ty) ->
-        let%bind ty' = go ~ctx t in
+        let%bind t', ty' = go ~ctx t in
         let%map () = tell (`Thunk ty, ty') in
-        ty
+        `Force (t', ty), ty'
     | `Lambda (`Ident n, ty0, t) ->
         let ctx = TyCtx.bind ctx n (ty0 :> ty) in
-        let%map ty1 = go ~ctx t in
-        `Fun (ty0, ty1)
+        let%map t', ty1 = go ~ctx t in
+        `Lambda (`Ident n, ty0, t'), `Fun (ty0, ty1)
     | `Lambda (`Wildcard, ty0, t) ->
-        let%map ty1 = go ~ctx t in
-        `Fun (ty0, ty1)
-    | `Let (`Ident n, e, b) ->
-        let te, cs = go ~ctx e in
-        let sub = unify cs in (*TODO: use this unification to simplify ctx, cs*)
-        let te = sub te in
-        let fs = TySet.diff (free_ty (te :> ty)) (free_ctx ctx) in
-        let gen_te = TySet.fold_right fs ~init:(te :> ty) ~f:(fun t s ->
-            match t with
-            | `TyVar n -> `Forall (n, s)
-            | _ -> s
-        ) in
-        let ctx = TyCtx.bind ctx n gen_te in
-        (b, cs) >>= go ~ctx
-    | `Let (`Wildcard, e, b) ->
-        let%bind _ = go ~ctx e in go ~ctx t
+        let%map t', ty1 = go ~ctx t in
+        `Lambda (`Wildcard, ty0, t'), `Fun (ty0, ty1)
+    | `Let (p, e, b) ->
+        let (e', te), cs = go ~ctx e in
+        let sub = unify cs in
+        let te = te |> sub |> generalize ~ctx in
+        let ctx =
+          begin match p with
+          | `Ident n -> TyCtx.bind ctx n te
+          | `Wildcard -> ctx
+          end in
+        let%map b', ty = (b, cs) >>= go ~ctx in
+        `Let (p, e', te, b'), ty
     | `App (t0, t1, ty) ->
-        let%bind ty0 = go ~ctx t0 in
-        let%bind ty1 = go ~ctx t1 in
+        let%bind t0', ty0 = go ~ctx t0 in
+        let%bind t1', ty1 = go ~ctx t1 in
         let%map () = tell (ty0, `Fun (ty1, ty)) in
-        ty
+        `App (t0', t1', ty), ty
   in go ~ctx:predef t
 
 let rec erase = function
   `Int _ | `Bool _ | `Ident _ | `Bottom as t -> t
 | `Att (t, _) -> erase t
 | `Thunk t -> `Thunk (erase t)
+| `Inst (t, _) -> erase t
 | `Force (t, _) -> `Force (erase t)
 | `Lambda (p, _, t) -> `Lambda (p, erase t)
-| `Let (p, e, b) -> `App (`Lambda (p, erase b), erase e)
+| `Let (p, e, _, b) -> `App (`Lambda (p, erase b), erase e)
 | `App (t0, t1, _) -> `App (erase t0, erase t1)
 
-let front_end s = s
-  |> parse
-  |> introduce_tyvars
-  |> fun tl ->
-      let ty, cs = derive_constraints tl in
+
+let embed_into_flambda tl =
+  let rec go_ty = function
+    | `TyFun ("List", a :: []) ->
+        begin match FreshTyVar.next () with
+        | `TyVar zn ->
+            let z = `TyIdent zn in
+            `Forall (zn,
+              `Fun (`Fun (go_ty (a :> ty), `Fun (z, z)), `Fun (z, z)))
+        (* TODO: proper generation of fresh name *)
+        end
+    | `TyFun _ as ty ->
+        raise @@ Tilambda_exception (UnsupportedTypeFunction ty)
+    | `Forall (n, ty) -> `Forall (n, go_ty ty)
+    | `TyVar n -> `TyIdent n
+    | `Thunk t -> `Thunk (go_ty (t :> ty))
+    | `Fun (t0, t1) -> `Fun (go_ty (t0 :> ty), go_ty (t1 :> ty))
+    | `Int | `Bool | `Bottom as ty -> ty in
+  let rec introduce_tylam t = function
+    | `Forall (n, ty) -> `TyLambda (n, introduce_tylam t ty)
+    | _ -> t in
+  let rec go = function
+    | `Att (t, _) -> go t
+    | `Inst (t, ty) -> `TyApp (go t, go_ty (ty :> ty))
+    | `App (t0, t1, _) -> `App (go t0, go t1)
+    | `Force (t, _) -> `Force (go t)
+    | `Ident n -> `Ident n
+    | `Lambda (p, ty, t) -> `Lambda (p, go_ty (ty :> ty), go t)
+    | `Let (p, e, te, b) ->
+        `App (`Lambda (p, go_ty te, go b), introduce_tylam (go e) te)
+    | `Thunk t -> `Thunk (go t)
+    | `Int _ | `Bool _ | `Bottom as t -> t
+  in go tl
+
+let front_end s = s |> parse |> introduce_tyvars |> fun tl ->
+      let (tl, ty), cs = derive_constraints tl in
       let sub = unify cs in
       sub ty, sub_ty_in_term sub tl
 
@@ -286,3 +329,8 @@ let via_ulambda tl = tl
 let type_of s = s |> front_end |> fst |> fun ty -> pretty_type (ty :> ty)
 
 let compile s = s |> front_end |> snd |> via_ulambda
+
+let compile_via_flambda s =
+  let fl = s |> front_end |> snd |> embed_into_flambda in
+  (*Flambda_parsetree.pretty_term fl |> print_endline;*)
+  fl |> Flambda.via_ulambda

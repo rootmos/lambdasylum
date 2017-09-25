@@ -6,4 +6,5 @@ digraph calculi {
     flambda -> ulambda [label="type erasure"];
     tilambda -> ulambda [label="type erasure"];
     tlambda -> flambda [label="embedding", style=dotted];
+    tilambda -> flambda [label="type-inference+embedding", style=dotted];
 }
