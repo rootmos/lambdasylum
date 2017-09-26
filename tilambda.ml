@@ -333,5 +333,4 @@ let compile s = s |> front_end |> snd |> via_ulambda
 let compile_via_flambda s =
   let fl = s |> front_end |> snd |> embed_into_flambda in
   (*Flambda_parsetree.pretty_term fl |> print_endline;*)
-  let _ = Flambda.(typecheck predef fl) in
   fl |> Flambda.via_ulambda

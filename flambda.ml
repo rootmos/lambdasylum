@@ -38,7 +38,16 @@ end)
 let predef = TyCtx.(
   {
     bindings = [
+      "and", parse_type "bool->bool->bool";
+      "or", parse_type "bool->bool->bool";
       "+", parse_type "int->int->int";
+      "-", parse_type "int->int->int";
+      "*", parse_type "int->int->int";
+      "zero?", parse_type "int->bool";
+      "eq?", parse_type "int->int->bool";
+      "leq?", parse_type "int->int->bool";
+      "succ", parse_type "int->int";
+      "pred", parse_type "int->int";
       "if", parse_type "∀T.bool->T->T->T";
       "nil", parse_type "∀T.∀Z.(T->Z->Z)->Z->Z";
       "nil?", parse_type "∀T.(∀Z.(T->Z->Z)->Z->Z)->bool";
@@ -118,14 +127,13 @@ let rec erase = function
 | `Force t -> `Force (erase t)
 | `Int _ | `Bool _ | `Bottom | `Ident _ as t -> t
 
-let front_end s =
-  let fl = parse s in
+let front_end = parse
+
+let via_ulambda fl =
   let _ = typecheck predef fl in
   fl
-
-let via_ulambda fl = fl
-  |> erase
-  |> Ulambda.church
-  |> Clambda.reduce Ulambda.church_predef
+    |> erase
+    |> Ulambda.church
+    |> Clambda.reduce Ulambda.church_predef
 
 let compile s = s |> front_end |> via_ulambda
